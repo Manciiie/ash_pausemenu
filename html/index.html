@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>ASH Pause</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --panel:#170e2b; --panel2:#100920; --line:#2d1f4a; --line2:#3b2a60;
+  --violet:#8b5cf6; --violet2:#b49cff; --text:#efeaf9; --muted:#9488b3;
+  --green:#22c55e; --red:#f04b5a; --gold:#f5c542;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:transparent;
+  font-family:Inter,"Segoe UI",sans-serif;color:var(--text);user-select:none}
+
+#app{position:fixed;inset:0;display:flex;opacity:0;visibility:hidden;
+  background:linear-gradient(90deg,rgba(8,4,16,.85) 0%,rgba(8,4,16,.35) 45%,rgba(8,4,16,.15) 100%);
+  transition:opacity .2s,visibility .2s}
+#app.show{opacity:1;visibility:visible}
+
+/* ---------- Panneau gauche ---------- */
+.panel{width:440px;height:100%;padding:44px 42px 26px;display:flex;flex-direction:column;flex-shrink:0;
+  background:linear-gradient(180deg,rgba(27,17,51,.97),rgba(16,9,32,.97));
+  border-right:1px solid var(--line2);box-shadow:20px 0 60px rgba(0,0,0,.45);
+  transform:translateX(-30px);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+#app.show .panel{transform:none}
+
+.logo{font-size:44px;font-weight:800;letter-spacing:3px;line-height:1}
+.logo .dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-left:5px;
+  background:var(--green);box-shadow:0 0 14px var(--green)}
+.sub{margin-top:8px;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:3px;text-transform:uppercase}
+.tag{margin-top:22px;display:inline-block;font-size:11px;font-weight:700;letter-spacing:2.5px;
+  color:var(--violet2);text-transform:uppercase;padding-bottom:6px;border-bottom:2px solid var(--violet)}
+
+.card{margin-top:18px;display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:12px;
+  background:rgba(139,92,246,.08);border:1px solid var(--line2)}
+.avatar{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:16px;
+  background:linear-gradient(135deg,var(--violet),#5b34c9);flex-shrink:0}
+.pname{font-weight:700;font-size:16px}
+.pjob{color:var(--muted);font-size:13px;margin-top:2px}
+.pids{color:var(--muted);font-size:11px;margin-top:4px;letter-spacing:.5px}
+.pids b{color:var(--violet2);font-weight:600}
+.card.masked .avatar{background:linear-gradient(135deg,#3b2a60,#241744)}
+
+.menu{margin-top:14px;display:flex;flex-direction:column;overflow-y:auto;min-height:0}
+.menu::-webkit-scrollbar{width:0}
+.btn{position:relative;display:flex;align-items:center;gap:16px;width:100%;padding:12px 2px;flex-shrink:0;
+  background:none;border:none;border-bottom:1px solid var(--line);color:var(--text);
+  font:600 16px Inter,"Segoe UI",sans-serif;text-align:left;cursor:pointer;outline:none}
+.btn .n{width:22px;font-size:12px;font-weight:700;color:var(--violet2)}
+.btn .lbl{transition:transform .18s}
+.btn .hint{margin-left:auto;font-size:12px;font-weight:500;color:var(--muted);opacity:0;transition:opacity .18s}
+.btn::after{content:"";position:absolute;left:0;bottom:-1px;height:2px;width:0;background:var(--violet);transition:width .22s}
+.btn.sel::after,.btn.active::after{width:100%}
+.btn.sel .lbl,.btn.active .lbl{transform:translateX(6px)}
+.btn.sel .hint{opacity:1}
+.btn.active .n{color:var(--text)}
+.btn.danger .n,.btn.danger.sel .lbl{color:var(--red)}
+.btn.danger::after{background:var(--red)}
+.btn.vip .n,.btn.vip.sel .lbl{color:var(--gold)}
+.btn.vip::after{background:var(--gold)}
+.badge{display:inline-block;margin-left:8px;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:800;
+  letter-spacing:1px;color:#1a1030;background:var(--gold);vertical-align:middle}
+.btn .arrow{margin-left:auto;color:var(--muted);font-size:14px;transition:transform .18s,color .18s}
+.btn.sel .arrow,.btn.active .arrow{color:var(--violet2);transform:translateX(3px)}
+
+/* interrupteur mode streamer */
+.switch{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted)}
+.switch i{position:relative;width:34px;height:18px;border-radius:9px;background:#2a1d47;border:1px solid var(--line2);transition:background .2s}
+.switch i::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s}
+.btn.on .switch{color:var(--green)}
+.btn.on .switch i{background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.5)}
+.btn.on .switch i::after{transform:translateX(16px);background:var(--green)}
+
+.spacer{flex:1;min-height:10px}
+.stats{display:flex;gap:22px;padding:14px 0;border-top:1px solid var(--line)}
+.stat .k{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:600}
+.stat .v{font-size:15px;font-weight:700;margin-top:3px}
+.stat .v .on{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:6px;vertical-align:middle}
+.foot{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}
+kbd{font:700 10px Inter,sans-serif;letter-spacing:1px;color:var(--text);padding:4px 7px;border-radius:5px;
+  border:1px solid var(--line2);background:rgba(255,255,255,.04);margin-right:6px;white-space:nowrap}
+
+/* ---------- Panneau droit (Règlement / Touches) ---------- */
+.view{position:relative;margin:44px 0 26px 44px;width:min(680px,calc(100vw - 440px - 88px));
+  display:flex;flex-direction:column;border-radius:16px;overflow:hidden;
+  background:linear-gradient(180deg,rgba(27,17,51,.95),rgba(16,9,32,.95));border:1px solid var(--line2);
+  box-shadow:0 30px 80px rgba(0,0,0,.5);
+  opacity:0;visibility:hidden;transform:translateX(-16px);transition:opacity .22s,transform .22s,visibility .22s}
+.view.show{opacity:1;visibility:visible;transform:none;transition:opacity .22s,transform .22s,visibility 0s}
+.vhead{padding:28px 32px 18px;border-bottom:1px solid var(--line)}
+.vtop{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.vtag{font-size:11px;font-weight:700;letter-spacing:2.5px;color:var(--violet2);text-transform:uppercase}
+.vtitle{margin-top:6px;font-size:28px;font-weight:800}
+.vclose{background:none;border:1px solid var(--line2);color:var(--muted);border-radius:8px;height:34px;padding:0 12px;
+  font:700 11px Inter,sans-serif;letter-spacing:1px;cursor:pointer}
+.vclose:hover{color:var(--text);border-color:var(--violet)}
+.vintro{margin-top:10px;color:var(--muted);font-size:13px;line-height:1.5}
+.search{margin-top:16px;display:flex;align-items:center;gap:10px;height:42px;padding:0 14px;border-radius:10px;
+  background:rgba(255,255,255,.04);border:1px solid var(--line2)}
+.search:focus-within{border-color:var(--violet)}
+.search svg{flex-shrink:0;opacity:.6}
+.search input{flex:1;background:none;border:none;outline:none;color:var(--text);font:500 14px Inter,sans-serif;user-select:text}
+.search input::placeholder{color:var(--muted)}
+.vbody{flex:1;overflow-y:auto;padding:8px 32px 28px}
+.vbody::-webkit-scrollbar{width:6px}
+.vbody::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+
+.sec{margin-top:22px}
+.sec h3{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--violet2)}
+.sec h3 span{color:var(--muted);font-weight:600;letter-spacing:1px}
+.sec h3::after{content:"";flex:1;height:1px;background:var(--line)}
+.rule{display:flex;gap:14px;padding:13px 0;border-bottom:1px solid rgba(45,31,74,.6)}
+.rule:last-child{border-bottom:none}
+.rule .num{flex-shrink:0;width:34px;font-size:12px;font-weight:700;color:var(--violet2);padding-top:2px}
+.rule .t{font-weight:700;font-size:14px}
+.rule .d{margin-top:3px;color:#c8bfe0;font-size:13.5px;line-height:1.5}
+mark{background:rgba(139,92,246,.35);color:var(--text);border-radius:3px;padding:0 2px}
+.empty{margin-top:40px;text-align:center;color:var(--muted);font-size:14px}
+
+.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 28px}
+.krow{display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid rgba(45,31,74,.6)}
+.krow kbd{min-width:52px;text-align:center;font-size:11px;padding:6px 8px;margin:0;border-bottom-width:3px}
+.krow span{font-size:14px;color:#dcd4ef}
+.knote{margin-top:22px;color:var(--muted);font-size:12px;line-height:1.5}
+
+/* ---------- Petits écrans : tout le menu reste visible ---------- */
+@media (max-height: 900px){
+  .panel{padding:30px 36px 18px}
+  .logo{font-size:36px}
+  .sub{margin-top:6px}
+  .tag{margin-top:14px}
+  .card{margin-top:12px;padding:10px 14px}
+  .avatar{width:38px;height:38px;font-size:14px}
+  .menu{margin-top:8px}
+  .btn{padding:9px 2px;font-size:15px}
+  .stats{padding:10px 0}
+  .view{margin:30px 0 18px 36px}
+}
+@media (max-height: 760px){
+  .tag{display:none}
+  .logo{font-size:32px}
+  .btn{padding:8px 2px}
+  .stats{padding:8px 0 10px}
+  .stat .v{font-size:14px}
+}
+
+/* ---------- Modal quitter ---------- */
+.modal{position:fixed;inset:0;display:grid;place-items:center;background:rgba(6,3,12,.6);
+  opacity:0;visibility:hidden;transition:opacity .18s,visibility .18s}
+.modal.show{opacity:1;visibility:visible}
+.box{width:420px;padding:28px 28px 24px;border-radius:14px;background:linear-gradient(180deg,#1d1238,#130a26);
+  border:1px solid var(--line2);box-shadow:0 30px 80px rgba(0,0,0,.6);transform:scale(.96);transition:transform .18s}
+.modal.show .box{transform:none}
+.box h2{font-size:20px;font-weight:800}
+.box p{margin-top:10px;color:var(--muted);font-size:14px;line-height:1.5}
+.err{margin-top:12px;color:var(--red);font-size:13px;font-weight:600;min-height:18px}
+.actions{margin-top:18px;display:flex;gap:10px}
+.act{flex:1;height:46px;border-radius:9px;border:1px solid var(--line2);background:rgba(255,255,255,.04);
+  color:var(--text);font:700 14px Inter,sans-serif;cursor:pointer;position:relative;overflow:hidden}
+.act:hover{border-color:var(--violet)}
+.act.quit{border-color:rgba(240,75,90,.5);color:#fff}
+.act.quit .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--red)}
+.act.quit span{position:relative}
+.act.quit:disabled{cursor:default}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside class="panel">
+    <div>
+      <div class="logo"><span id="srv">ASH</span><span class="dot"></span></div>
+      <div class="sub" id="subtitle">City / Roleplay</div>
+      <div class="tag">Menu pause</div>
+    </div>
+
+    <div class="card" id="card">
+      <div class="avatar" id="avatar">?</div>
+      <div>
+        <div class="pname" id="pname">—</div>
+        <div class="pjob" id="pjob">—</div>
+        <div class="pids">ID <b id="pid">0</b> · CID <b id="pcid">—</b></div>
+      </div>
+    </div>
+
+    <nav class="menu" id="menu">
+      <button class="btn" data-action="resume"><span class="n"></span><span class="lbl">Reprendre</span><span class="hint">Retour en jeu</span></button>
+      <button class="btn" data-action="map"><span class="n"></span><span class="lbl">Carte</span><span class="hint">Menu GTA</span></button>
+      <button class="btn" data-action="settings"><span class="n"></span><span class="lbl">Paramètres</span><span class="hint">Graphismes, son, touches</span></button>
+      <button class="btn" data-action="rules" data-view="rules"><span class="n"></span><span class="lbl">Règlement</span><span class="arrow">›</span></button>
+      <button class="btn" data-action="keys" data-view="keys"><span class="n"></span><span class="lbl">Touches</span><span class="arrow">›</span></button>
+      <button class="btn" data-action="streamer" id="btnStreamer"><span class="n"></span><span class="lbl">Mode streamer</span><span class="switch"><b id="swLbl">OFF</b><i></i></span></button>
+      <button class="btn" data-action="report" id="btnReport"><span class="n"></span><span class="lbl">Signaler / Report</span><span class="hint">Contacter le staff</span></button>
+      <button class="btn" data-action="discord" id="btnDiscord"><span class="n"></span><span class="lbl">Discord</span><span class="hint">Ouvrir le lien</span></button>
+      <button class="btn vip" data-action="shop" id="btnShop"><span class="n"></span><span class="lbl">Boutique VIP <span class="badge">VIP</span></span><span class="hint">Soutenir le serveur</span></button>
+      <button class="btn danger" data-action="quit"><span class="n"></span><span class="lbl">Quitter la session</span><span class="hint">Déconnexion</span></button>
+    </nav>
+
+    <div class="spacer"></div>
+
+    <div class="stats">
+      <div class="stat"><div class="k">Joueurs</div><div class="v"><span class="on"></span><span id="players">—</span></div></div>
+      <div class="stat"><div class="k">Session</div><div class="v" id="session">0 min</div></div>
+      <div class="stat"><div class="k">Heure</div><div class="v" id="clock">--:--</div></div>
+    </div>
+    <div class="foot">
+      <span><kbd>↑↓</kbd>Naviguer <kbd style="margin-left:8px">ENTRÉE</kbd>Valider</span>
+      <span><kbd>ÉCHAP</kbd><span id="escLbl">Fermer</span></span>
+    </div>
+  </aside>
+
+  <section class="view" id="view">
+    <div class="vhead">
+      <div class="vtop">
+        <div>
+          <div class="vtag" id="vtag">—</div>
+          <div class="vtitle" id="vtitle">—</div>
+        </div>
+        <button class="vclose" id="vclose">RETOUR</button>
+      </div>
+      <div class="vintro" id="vintro"></div>
+      <label class="search" id="searchBox">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b49cff" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="search" type="text" placeholder="Rechercher une règle…" autocomplete="off" spellcheck="false">
+      </label>
+    </div>
+    <div class="vbody" id="vbody"></div>
+  </section>
+</div>
+
+<div class="modal" id="modal">
+  <div class="box">
+    <h2>Quitter ASH City ?</h2>
+    <p>Ton personnage sera sauvegardé et tu seras déconnecté du serveur.</p>
+    <div class="err" id="err"></div>
+    <div class="actions">
+      <button class="act" id="cancel">Annuler</button>
+      <button class="act quit" id="quitBtn"><div class="fill" id="fill"></div><span id="quitLbl">Maintenir pour quitter</span></button>
+    </div>
+  </div>
+</div>
+
+<script>
+const RES = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'ash_pausemenu';
+const post = (name, data = {}) =>
+  fetch(`https://${RES}/${name}`, {method:'POST', headers:{'Content-Type':'application/json; charset=UTF-8'}, body:JSON.stringify(data)})
+    .then(r => r.json()).catch(() => ({}));
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const app = $('app'), modal = $('modal'), view = $('view'), search = $('search');
+
+let cfg = {hold:1500};
+let data = {rules:[], rulesIntro:'', keys:[]};
+let player = {};
+let streamer = false;
+let sel = 0, open = false, sessionSec = 0, ticker = null, currentView = null;
+let holdRaf = null, holdStart = 0, holding = false, busy = false;
+
+/* ---------- Navigation ---------- */
+const buttons = () => [...document.querySelectorAll('.btn')].filter(b => b.style.display !== 'none');
+function select(i){
+  const list = buttons();
+  sel = (i + list.length) % list.length;
+  list.forEach((b, k) => b.classList.toggle('sel', k === sel));
+  list[sel].scrollIntoView({block:'nearest'});
+}
+function renumber(){
+  buttons().forEach((b, i) => b.querySelector('.n').textContent = String(i + 1).padStart(2, '0'));
+}
+
+/* ---------- Carte joueur / streamer ---------- */
+function renderPlayer(){
+  const p = player;
+  $('card').classList.toggle('masked', streamer);
+  $('pname').textContent = streamer ? 'Mode streamer' : (p.name || '—');
+  $('pjob').textContent = p.grade ? `${p.job} · ${p.grade}` : (p.job || '—');
+  $('pid').textContent = streamer ? '•••' : (p.id ?? '—');
+  $('pcid').textContent = streamer ? '•••••' : (p.citizenid || '—');
+  $('avatar').textContent = streamer ? '◉' : (p.name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  $('btnStreamer').classList.toggle('on', streamer);
+  $('swLbl').textContent = streamer ? 'ON' : 'OFF';
+}
+
+/* ---------- Horloge / session ---------- */
+function fmtSession(s){
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return h ? `${h}h ${String(m).padStart(2,'0')}min` : `${m} min`;
+}
+function tick(){
+  sessionSec++;
+  $('session').textContent = fmtSession(sessionSec);
+  const d = new Date();
+  $('clock').textContent = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+/* ---------- Panneau droit ---------- */
+function highlight(text, q){
+  const safe = esc(text);
+  if (!q) return safe;
+  const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+  return safe.replace(re, '<mark>$1</mark>');
+}
+const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+function renderRules(){
+  const q = search.value.trim();
+  const nq = norm(q);
+  let html = '', total = 0;
+  (data.rules || []).forEach((sec, si) => {
+    const items = (sec.items || []).map((it, ii) => ({it: typeof it === 'string' ? {text: it} : it, idx: `${si+1}.${ii+1}`}))
+      .filter(({it}) => !nq || norm(it.title).includes(nq) || norm(it.text).includes(nq) || norm(sec.title).includes(nq));
+    if (!items.length) return;
+    total += items.length;
+    html += `<div class="sec"><h3>${esc(sec.title)} <span>${items.length}</span></h3>`;
+    items.forEach(({it, idx}) => {
+      html += `<div class="rule"><div class="num">${idx}</div><div>`
+        + (it.title ? `<div class="t">${highlight(it.title, q)}</div>` : '')
+        + `<div class="d">${highlight(it.text, q)}</div></div></div>`;
+    });
+    html += '</div>';
+  });
+  $('vbody').innerHTML = total ? html : `<div class="empty">Aucune règle ne correspond à « ${esc(q)} ».</div>`;
+}
+
+function renderKeys(){
+  let html = '';
+  (data.keys || []).forEach(sec => {
+    html += `<div class="sec"><h3>${esc(sec.title)}</h3><div class="kgrid">`;
+    (sec.binds || []).forEach(b => { html += `<div class="krow"><kbd>${esc(b.key)}</kbd><span>${esc(b.label)}</span></div>`; });
+    html += '</div></div>';
+  });
+  html += `<div class="knote">Tu peux modifier la plupart de ces touches dans Paramètres › Raccourcis clavier › FiveM.</div>`;
+  $('vbody').innerHTML = html;
+}
+
+function openView(name){
+  if (currentView === name) { closeView(); return; }
+  currentView = name;
+  document.querySelectorAll('.btn[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  $('vtag').textContent = document.querySelector(`.btn[data-view="${name}"] .n`).textContent + ' · ' + cfg.server;
+  $('vbody').scrollTop = 0;
+  if (name === 'rules') {
+    $('vtitle').textContent = 'Règlement';
+    $('vintro').textContent = data.rulesIntro || '';
+    $('vintro').style.display = data.rulesIntro ? '' : 'none';
+    $('searchBox').style.display = '';
+    search.value = '';
+    renderRules();
+  } else {
+    $('vtitle').textContent = 'Touches & commandes';
+    $('vintro').style.display = 'none';
+    $('searchBox').style.display = 'none';
+    renderKeys();
+  }
+  view.classList.add('show');
+  $('escLbl').textContent = 'Retour';
+}
+function closeView(){
+  currentView = null;
+  search.blur();
+  view.classList.remove('show');
+  document.querySelectorAll('.btn[data-view]').forEach(b => b.classList.remove('active'));
+  $('escLbl').textContent = 'Fermer';
+}
+search.addEventListener('input', renderRules);
+$('vclose').addEventListener('click', closeView);
+
+/* ---------- Ouverture / fermeture ---------- */
+function show(msg){
+  cfg = msg.config || cfg;
+  if (msg.static) data = msg.static;
+  player = msg.player || {};
+  streamer = !!msg.streamer;
+  $('srv').textContent = cfg.server || 'ASH';
+  $('subtitle').textContent = cfg.subtitle || '';
+  $('btnDiscord').style.display = cfg.discord ? '' : 'none';
+  $('btnShop').style.display = cfg.shop ? '' : 'none';
+  $('btnReport').style.display = cfg.report ? '' : 'none';
+  renumber();
+  renderPlayer();
+  $('players').textContent = '—';
+  sessionSec = (msg.session || 0) - 1; tick();
+  clearInterval(ticker); ticker = setInterval(tick, 1000);
+  busy = false; closeModal(); closeView();
+  select(0);
+  open = true;
+  app.classList.add('show');
+}
+function hide(){
+  open = false;
+  app.classList.remove('show');
+  busy = false; closeModal(); closeView();
+  clearInterval(ticker);
+}
+
+function run(action){
+  switch(action){
+    case 'resume':   post('close'); break;
+    case 'map':      post('map'); break;
+    case 'settings': post('settings'); break;
+    case 'rules':
+    case 'keys':     openView(action); break;
+    case 'streamer':
+      streamer = !streamer; renderPlayer();
+      post('streamer', {enabled: streamer}).then(r => {
+        if (r && typeof r.enabled === 'boolean') { streamer = r.enabled; if (r.player) player = r.player; renderPlayer(); }
+      });
+      break;
+    case 'report':   post('report'); break;
+    case 'discord':  if (cfg.discord && window.invokeNative) window.invokeNative('openUrl', cfg.discord); break;
+    case 'shop':     if (cfg.shop && window.invokeNative) window.invokeNative('openUrl', cfg.shop); break;
+    case 'quit':     openModal(); break;
+  }
+}
+
+/* ---------- Modal quitter + maintien ---------- */
+function openModal(){
+  busy = false; $('err').textContent = ''; $('quitLbl').textContent = 'Maintenir pour quitter';
+  $('quitBtn').disabled = false; resetHold();
+  modal.classList.add('show');
+}
+function closeModal(){ if (busy) return; resetHold(); modal.classList.remove('show'); }
+const modalOpen = () => modal.classList.contains('show');
+
+function resetHold(){ cancelAnimationFrame(holdRaf); holding = false; $('fill').style.width = '0%'; }
+function startHold(){
+  if (busy || holding) return;
+  holding = true; $('err').textContent = '';
+  holdStart = performance.now();
+  const step = t => {
+    const p = Math.min(1, (t - holdStart) / (cfg.hold || 1500));
+    $('fill').style.width = (p * 100) + '%';
+    if (p >= 1) { doQuit(); return; }
+    holdRaf = requestAnimationFrame(step);
+  };
+  holdRaf = requestAnimationFrame(step);
+}
+function stopHold(){ if (!busy) resetHold(); }
+
+function doQuit(){
+  busy = true; holding = false;
+  $('quitBtn').disabled = true;
+  $('quitLbl').textContent = 'Déconnexion…';
+  post('quit').then(r => {
+    if (r && r.ok) return;
+    busy = false;
+    $('quitBtn').disabled = false;
+    $('quitLbl').textContent = 'Maintenir pour quitter';
+    $('err').textContent = (r && r.reason) || 'Impossible de quitter pour le moment.';
+    resetHold();
+  });
+}
+
+const qb = $('quitBtn');
+qb.addEventListener('mousedown', startHold);
+qb.addEventListener('mouseup', stopHold);
+qb.addEventListener('mouseleave', stopHold);
+$('cancel').addEventListener('click', closeModal);
+
+/* ---------- Souris ---------- */
+document.querySelectorAll('.btn').forEach(b => {
+  b.addEventListener('mouseenter', () => { sel = buttons().indexOf(b); buttons().forEach(x => x.classList.toggle('sel', x === b)); });
+  b.addEventListener('click', () => run(b.dataset.action));
+});
+
+/* ---------- Clavier ---------- */
+window.addEventListener('keydown', e => {
+  if (!open) return;
+  const typing = document.activeElement === search;
+
+  if (e.key === 'Escape') {
+    if (modalOpen()) closeModal();
+    else if (typing && search.value) { search.value = ''; renderRules(); }
+    else if (currentView) closeView();
+    else post('close');
+    return;
+  }
+  if (modalOpen()) { if (e.key === 'Enter' && !e.repeat) startHold(); return; }
+  if (typing) { if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') search.blur(); else return; }
+
+  if (e.key === 'ArrowDown') { e.preventDefault(); select(sel + 1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); select(sel - 1); }
+  else if (e.key === 'Enter') run(buttons()[sel].dataset.action);
+  else if (currentView === 'rules' && /^[a-zà-ÿ]$/i.test(e.key) && !e.ctrlKey && !e.altKey) {
+    // taper = rechercher : on insère nous-mêmes la 1re lettre (sinon elle est perdue pendant le changement de focus)
+    e.preventDefault();
+    search.focus();
+    search.value += e.key;
+    renderRules();
+  }
+  else if (/^[0-9]$/.test(e.key)) {
+    const b = buttons()[e.key === '0' ? 9 : +e.key - 1];
+    if (b) { select(buttons().indexOf(b)); run(b.dataset.action); }
+  }
+});
+window.addEventListener('keyup', e => { if (e.key === 'Enter' && modalOpen()) stopHold(); });
+
+/* ---------- Messages Lua ---------- */
+window.addEventListener('message', ({data: m}) => {
+  if (!m || !m.action) return;
+  if (m.action === 'open') show(m);
+  else if (m.action === 'close') hide();
+  else if (m.action === 'stats') $('players').textContent = `${m.players}/${m.max}`;
+});
+</script>
+</body>
+</html>
