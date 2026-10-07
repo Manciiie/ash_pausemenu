@@ -3,7 +3,7 @@ Config = {}
 -- Affichage
 Config.ServerName = 'ASH'
 Config.Subtitle   = 'City / Roleplay'
-Config.Discord    = 'https://discord.gg/tonlien'   -- '' pour masquer le bouton Discord
+Config.Discord    = 'https://discord.gg/ATczKRMWT'   -- '' pour masquer le bouton Discord
 Config.Shop       = 'https://tonserveur.tebex.io'  -- lien de la boutique VIP ('' pour masquer le bouton)
 
 -- Comportement
@@ -120,8 +120,7 @@ Config.Keys = {
     {
         title = 'Véhicule',
         binds = {
-            { key = 'L',      label = 'Verrouiller / déverrouiller' },
-            { key = 'G',      label = 'Moteur' },
+            { key = 'K',      label = 'Verrouiller / déverrouiller' },
             { key = 'B',      label = 'Ceinture' },
         },
     },
