@@ -57,6 +57,36 @@ local function playerInfo()
     }
 end
 
+-- Récompenses VIP (ash_vipdaily) ------------------------------------------------
+local vd = Config.VipDaily or {}
+local vipCache, vipCacheAt = nil, -1e9
+
+local function vipDailyActif()
+    return vd.Ressource and vd.Ressource ~= '' and GetResourceState(vd.Ressource) == 'started'
+end
+
+-- Récupère l'état du jour auprès d'ash_vipdaily (son callback serveur vérifie tout),
+-- avec un petit cache pour ne pas interroger le serveur à chaque ÉCHAP
+local function sendVipDaily()
+    local now = GetGameTimer()
+    if vipCache and now - vipCacheAt < (vd.Cache or 30) * 1000 then
+        SendNUIMessage({ action = 'vipdaily', etat = vipCache })
+        return
+    end
+    lib.callback('ash_vipdaily:server:ouvrir', false, function(d)
+        if type(d) ~= 'table' then return end
+        vipCache = {
+            vip        = d.vip == true,
+            disponible = d.disponible == true,
+            recupere   = d.dejaRecupere == true,
+            serie      = tonumber(d.serie) or 0,
+            secondes   = tonumber(d.secondes) or 0,
+        }
+        vipCacheAt = GetGameTimer()
+        if isOpen then SendNUIMessage({ action = 'vipdaily', etat = vipCache }) end
+    end)
+end
+
 local function openMenu()
     isOpen = true
     lastToggle = GetGameTimer()
@@ -74,6 +104,7 @@ local function openMenu()
             discord  = Config.Discord,
             shop     = Config.Shop,
             report   = Config.ReportCommand ~= nil and Config.ReportCommand ~= '',
+            vipdaily = vipDailyActif() and true or false,
             hold     = Config.HoldToQuit,
         },
     }
@@ -88,6 +119,8 @@ local function openMenu()
             SendNUIMessage({ action = 'stats', players = stats.players, max = stats.max })
         end
     end)
+
+    if msg.config.vipdaily then sendVipDaily() end
 end
 
 local function closeMenu()
@@ -185,6 +218,17 @@ RegisterNUICallback('report', function(_, cb)
     CreateThread(function()
         Wait(150)   -- laisse le focus NUI se libérer avant d'ouvrir l'interface de Luxu
         ExecuteCommand(Config.ReportCommand)
+    end)
+end)
+
+RegisterNUICallback('vipdaily', function(_, cb)
+    cb('ok')
+    if not vipDailyActif() then return end
+    vipCache = nil   -- l'état va changer si le joueur récupère sa récompense
+    closeMenu()
+    CreateThread(function()
+        Wait(150)   -- laisse le focus NUI se libérer avant d'ouvrir l'interface d'ash_vipdaily
+        ExecuteCommand(vd.Commande or 'recompenses')
     end)
 end)
 

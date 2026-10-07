@@ -62,6 +62,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:transparent;
 .btn.vip::after{background:var(--gold)}
 .badge{display:inline-block;margin-left:8px;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:800;
   letter-spacing:1px;color:#1a1030;background:var(--gold);vertical-align:middle}
+/* état des récompenses VIP */
+.vstate{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--muted);white-space:nowrap}
+.vstate.ok{color:var(--green)}
+.vstate.ok::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 1.6s ease-in-out infinite}
+.vstate.gold{color:var(--gold)}
+@keyframes pulse{50%{opacity:.35}}
 .btn .arrow{margin-left:auto;color:var(--muted);font-size:14px;transition:transform .18s,color .18s}
 .btn.sel .arrow,.btn.active .arrow{color:var(--violet2);transform:translateX(3px)}
 
@@ -193,6 +199,7 @@ mark{background:rgba(139,92,246,.35);color:var(--text);border-radius:3px;padding
       <button class="btn" data-action="streamer" id="btnStreamer"><span class="n"></span><span class="lbl">Mode streamer</span><span class="switch"><b id="swLbl">OFF</b><i></i></span></button>
       <button class="btn" data-action="report" id="btnReport"><span class="n"></span><span class="lbl">Signaler / Report</span><span class="hint">Contacter le staff</span></button>
       <button class="btn" data-action="discord" id="btnDiscord"><span class="n"></span><span class="lbl">Discord</span><span class="hint">Ouvrir le lien</span></button>
+      <button class="btn vip" data-action="vipdaily" id="btnVipDaily"><span class="n"></span><span class="lbl">Récompenses VIP</span><span class="vstate" id="vdState">…</span></button>
       <button class="btn vip" data-action="shop" id="btnShop"><span class="n"></span><span class="lbl">Boutique VIP <span class="badge">VIP</span></span><span class="hint">Soutenir le serveur</span></button>
       <button class="btn danger" data-action="quit"><span class="n"></span><span class="lbl">Quitter la session</span><span class="hint">Déconnexion</span></button>
     </nav>
@@ -367,6 +374,18 @@ function closeView(){
 search.addEventListener('input', renderRules);
 $('vclose').addEventListener('click', closeView);
 
+/* ---------- Récompenses VIP (ash_vipdaily) ---------- */
+function setVipDaily(e){
+  const el = $('vdState');
+  el.className = 'vstate';
+  if (!e) { el.textContent = '…'; return; }
+  if (!e.vip) { el.textContent = 'Réservé aux VIP'; return; }
+  if (e.disponible) { el.classList.add('ok'); el.textContent = 'Disponible'; return; }
+  const h = Math.floor((e.secondes || 0) / 3600), m = Math.floor(((e.secondes || 0) % 3600) / 60);
+  el.classList.add('gold');
+  el.textContent = `Série ${e.serie || 0} j · ${h}h${String(m).padStart(2, '0')}`;
+}
+
 /* ---------- Ouverture / fermeture ---------- */
 function show(msg){
   cfg = msg.config || cfg;
@@ -378,6 +397,8 @@ function show(msg){
   $('btnDiscord').style.display = cfg.discord ? '' : 'none';
   $('btnShop').style.display = cfg.shop ? '' : 'none';
   $('btnReport').style.display = cfg.report ? '' : 'none';
+  $('btnVipDaily').style.display = cfg.vipdaily ? '' : 'none';
+  setVipDaily(null);
   renumber();
   renderPlayer();
   $('players').textContent = '—';
@@ -409,6 +430,7 @@ function run(action){
       });
       break;
     case 'report':   post('report'); break;
+    case 'vipdaily': post('vipdaily'); break;
     case 'discord':  if (cfg.discord && window.invokeNative) window.invokeNative('openUrl', cfg.discord); break;
     case 'shop':     if (cfg.shop && window.invokeNative) window.invokeNative('openUrl', cfg.shop); break;
     case 'quit':     openModal(); break;
@@ -503,6 +525,7 @@ window.addEventListener('message', ({data: m}) => {
   if (m.action === 'open') show(m);
   else if (m.action === 'close') hide();
   else if (m.action === 'stats') $('players').textContent = `${m.players}/${m.max}`;
+  else if (m.action === 'vipdaily') setVipDaily(m.etat);
 });
 </script>
 </body>

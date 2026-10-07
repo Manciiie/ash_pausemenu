@@ -27,6 +27,19 @@ Config.QuitMessage = 'Tu as quitté ASH City. Ton personnage a été sauvegardé
 Config.ReportCommand = 'report'
 
 ------------------------------------------------------------------------
+-- Récompenses VIP quotidiennes (ressource ash_vipdaily)
+-- Le bouton n'apparaît que si la ressource est démarrée. Il affiche l'état du
+-- jour (disponible / déjà récupérée / réservé aux VIP) puis ouvre son interface.
+-- Commande = celle de Config.Commande dans ash_vipdaily (sans le "/").
+-- Ressource = '' pour masquer le bouton.
+------------------------------------------------------------------------
+Config.VipDaily = {
+    Ressource = 'ash_vipdaily',
+    Commande  = 'recompenses',
+    Cache     = 30,   -- secondes pendant lesquelles l'état est réutilisé entre deux ouvertures du menu
+}
+
+------------------------------------------------------------------------
 -- Mode streamer
 -- Masque dans le menu : nom RP, ID serveur et CitizenID. Le choix est mémorisé
 -- sur le PC du joueur (reste actif après reco).
