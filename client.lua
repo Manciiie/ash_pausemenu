@@ -18,6 +18,56 @@ local lastForeignNui = 0     -- dernière fois qu'une autre NUI (téléphone, ch
 local sessionStart = GetGameTimer()
 local staticSent   = false   -- règlement / touches envoyés une seule fois à la NUI
 
+-- Notifications : ash_notify si démarrée, sinon ox_lib --------------------------
+-- Valeurs par défaut si Config.Notifications manque (un ancien config.lua ne doit pas retomber sur ox_lib)
+local NOTIF_DEFAUT = {
+    systeme    = 'ash_notify',
+    ressources = { 'ash_notify' },
+    duree      = 5000,
+    son        = { success = true, error = true, warning = false, info = false },
+}
+local TYPES_ASH = { inform = 'info', info = 'info', success = 'success', error = 'error', warning = 'warning' }
+local secoursSignale = false
+
+local function reglagesNotif()
+    local N = Config.Notifications
+    if type(N) ~= 'table' then return NOTIF_DEFAUT end
+    return {
+        systeme    = N.systeme or NOTIF_DEFAUT.systeme,
+        ressources = N.ressources or (N.ressource and { N.ressource }) or NOTIF_DEFAUT.ressources,
+        duree      = N.duree or NOTIF_DEFAUT.duree,
+        son        = N.son or NOTIF_DEFAUT.son,
+    }
+end
+
+-- Ressource ash_notify si elle est démarrée, sinon nil
+local function ressourceNotif(N)
+    if N.systeme ~= 'ash_notify' then return nil end
+    for _, nom in ipairs(N.ressources) do
+        if GetResourceState(nom) == 'started' then return nom end
+    end
+    if not secoursSignale then
+        secoursSignale = true
+        print(('^3[%s] aucune ressource de notification démarrée (%s) : notifications ox_lib utilisées^0')
+            :format(GetCurrentResourceName(), table.concat(N.ressources, ', ')))
+    end
+    return nil
+end
+
+local function notifier(titre, message, typeNotif)
+    local N = reglagesNotif()
+    local ressource = ressourceNotif(N)
+    if ressource then
+        local typeAsh = TYPES_ASH[typeNotif or 'inform'] or 'info'
+        local ok, err = pcall(function()
+            exports[ressource]:SendAlert(titre, message, N.duree, typeAsh, N.son[typeAsh] or false)
+        end)
+        if ok then return end
+        print(('^1[%s] %s en erreur, ox_lib utilisé : %s^0'):format(GetCurrentResourceName(), ressource, tostring(err)))
+    end
+    lib.notify({ title = titre, description = message, type = typeNotif or 'inform' })
+end
+
 -- Mode streamer (mémorisé sur le PC du joueur)
 local streamer = GetResourceKvpInt('ash_streamer') == 1
 
@@ -32,11 +82,9 @@ local function applyStreamer(enabled, silent)
     end
 
     if not silent then
-        lib.notify({
-            title = 'Mode streamer',
-            description = enabled and Config.Locale.streamerOn or Config.Locale.streamerOff,
-            type = enabled and 'success' or 'inform',
-        })
+        notifier('Mode streamer',
+            enabled and Config.Locale.streamerOn or Config.Locale.streamerOff,
+            enabled and 'success' or 'inform')
     end
 end
 

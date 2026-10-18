@@ -12,12 +12,12 @@ Remplace le menu pause GTA (ÉCHAP, et P en option) par un menu au thème ASH.
 - **Quitter la session** : confirmation par maintien, refusée si menotté / à terre / mort, anti-spam
 
 ## Dépendances
-`qb-core`, `ox_lib` — optionnel : `ash_vipdaily`
+`qb-core`, `ox_lib` — optionnel : `ash_notify` (notifications, secours ox_lib), `ash_vipdaily`
 
 ## Installation (Nitrado)
 1. Déposer le dossier dans `resources/` via FTP.
-2. `server.cfg` : `ensure ash_pausemenu` après `qb-core` et `ox_lib`.
-3. Régler `config.lua` : liens Discord / boutique, `Config.ReportCommand`, `Config.VipDaily`, règlement, touches.
+2. `server.cfg` : `ensure ash_pausemenu` après `qb-core`, `ox_lib` et `ash_notify`.
+3. Régler `config.lua` : `Config.Notifications`, liens Discord / boutique, `Config.ReportCommand`, `Config.VipDaily`, règlement, touches.
 
 ## Pour les autres ressources
 - `exports.ash_pausemenu:IsOpen()` / `exports.ash_pausemenu:Close()`

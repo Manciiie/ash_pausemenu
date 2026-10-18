@@ -11,6 +11,19 @@ Config.Blur       = true    -- flou de l'écran derrière le menu
 Config.OverrideP  = true    -- la touche P ouvre aussi le menu ASH (au lieu du menu pause GTA)
 Config.HoldToQuit = 1500    -- durée (ms) à maintenir le bouton pour confirmer la déconnexion
 
+------------------------------------------------------------------------
+-- Notifications : ash_notify (exports['ash_notify']:SendAlert)
+--   systeme   : 'ash_notify' ou 'ox_lib'
+--   ressource : nom du dossier d'ash_notify sur le serveur (ensure ash_notify AVANT ash_pausemenu)
+-- Si ash_notify n'est pas démarrée, ox_lib prend le relais (une ligne jaune l'indique en F8).
+------------------------------------------------------------------------
+Config.Notifications = {
+    systeme   = 'ash_notify',
+    ressource = 'ash_notify',
+    duree     = 5000,   -- ms
+    son       = { success = true, error = true, warning = false, info = false },
+}
+
 -- Anti "déco en pleine action" : refuse de quitter via le menu si le joueur est
 -- menotté, à terre ou mort. (Ça n'empêche pas ALT+F4 / F8 quit, c'est un garde-fou RP.)
 Config.BlockQuitWhenRestrained = true
