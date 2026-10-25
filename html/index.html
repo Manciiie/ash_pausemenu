@@ -3,168 +3,348 @@
 <head>
 <meta charset="UTF-8">
 <title>ASH Pause</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
-  --panel:#170e2b; --panel2:#100920; --line:#2d1f4a; --line2:#3b2a60;
-  --violet:#8b5cf6; --violet2:#b49cff; --text:#efeaf9; --muted:#9488b3;
+  --panel:rgba(22,13,42,.94); --panel2:rgba(15,9,30,.95); --glass:rgba(139,92,246,.07);
+  --line:#2a1d47; --line2:#3b2a60; --violet:#8b5cf6; --violet2:#b49cff; --violet3:#6d3fe0;
+  --text:#efeaf9; --muted:#9488b3; --dim:#6c6290;
   --green:#22c55e; --red:#f04b5a; --gold:#f5c542;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;background:transparent;
   font-family:Inter,"Segoe UI",sans-serif;color:var(--text);user-select:none}
 
-#app{position:fixed;inset:0;display:flex;opacity:0;visibility:hidden;
-  background:linear-gradient(90deg,rgba(8,4,16,.85) 0%,rgba(8,4,16,.35) 45%,rgba(8,4,16,.15) 100%);
+#app{position:fixed;inset:0;display:flex;gap:22px;padding:18px 22px 18px 18px;opacity:0;visibility:hidden;
+  background:linear-gradient(90deg,rgba(7,4,15,.9) 0%,rgba(7,4,15,.6) 35%,rgba(7,4,15,.4) 100%);
   transition:opacity .2s,visibility .2s}
 #app.show{opacity:1;visibility:visible}
 
-/* ---------- Panneau gauche ---------- */
-.panel{width:440px;height:100%;padding:44px 42px 26px;display:flex;flex-direction:column;flex-shrink:0;
-  background:linear-gradient(180deg,rgba(27,17,51,.97),rgba(16,9,32,.97));
-  border-right:1px solid var(--line2);box-shadow:20px 0 60px rgba(0,0,0,.45);
-  transform:translateX(-30px);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
-#app.show .panel{transform:none}
+kbd{font:800 9.5px Inter,sans-serif;letter-spacing:.8px;color:var(--text);padding:4px 6px;border-radius:5px;
+  border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);white-space:nowrap}
+.eyebrow{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:700;letter-spacing:2.5px;color:var(--violet2);text-transform:uppercase}
+.eyebrow::before{content:"";width:16px;height:2px;border-radius:2px;background:var(--violet)}
 
-.logo{font-size:44px;font-weight:800;letter-spacing:3px;line-height:1}
-.logo .dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-left:5px;
-  background:var(--green);box-shadow:0 0 14px var(--green)}
-.sub{margin-top:8px;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:3px;text-transform:uppercase}
-.tag{margin-top:22px;display:inline-block;font-size:11px;font-weight:700;letter-spacing:2.5px;
-  color:var(--violet2);text-transform:uppercase;padding-bottom:6px;border-bottom:2px solid var(--violet)}
+/* ---------------- Sidebar ---------------- */
+.side{width:300px;flex-shrink:0;display:flex;flex-direction:column;border-radius:18px;padding:18px 14px 14px;
+  background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line2);
+  box-shadow:0 30px 80px rgba(0,0,0,.5);transform:translateX(-24px);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+#app.show .side{transform:none}
+.brand{display:flex;align-items:center;gap:12px;padding:0 6px}
+.brand .ico{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;flex-shrink:0;
+  background:linear-gradient(135deg,var(--violet),var(--violet3));box-shadow:0 6px 20px rgba(139,92,246,.45)}
+.brand b{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:900;letter-spacing:3px}
+.brand b i{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+.brand small{display:block;font-size:9px;font-weight:700;letter-spacing:2px;color:var(--muted);margin-top:2px;text-transform:uppercase}
+.side .eyebrow{margin:22px 6px 6px}
+.paused{font-size:38px;font-weight:900;letter-spacing:-.5px;padding:0 6px;line-height:1}
 
-.card{margin-top:18px;display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:12px;
-  background:rgba(139,92,246,.08);border:1px solid var(--line2)}
-.avatar{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:16px;
-  background:linear-gradient(135deg,var(--violet),#5b34c9);flex-shrink:0}
-.pname{font-weight:700;font-size:16px}
-.pjob{color:var(--muted);font-size:13px;margin-top:2px}
-.pids{color:var(--muted);font-size:11px;margin-top:4px;letter-spacing:.5px}
-.pids b{color:var(--violet2);font-weight:600}
-.card.masked .avatar{background:linear-gradient(135deg,#3b2a60,#241744)}
-
-.menu{margin-top:14px;display:flex;flex-direction:column;overflow-y:auto;min-height:0}
+.menu{margin-top:16px;display:flex;flex-direction:column;gap:3px;overflow-y:auto;min-height:0;margin-right:-6px;padding-right:6px}
 .menu::-webkit-scrollbar{width:0}
-.btn{position:relative;display:flex;align-items:center;gap:16px;width:100%;padding:12px 2px;flex-shrink:0;
-  background:none;border:none;border-bottom:1px solid var(--line);color:var(--text);
-  font:600 16px Inter,"Segoe UI",sans-serif;text-align:left;cursor:pointer;outline:none}
-.btn .n{width:22px;font-size:12px;font-weight:700;color:var(--violet2)}
-.btn .lbl{transition:transform .18s}
-.btn .hint{margin-left:auto;font-size:12px;font-weight:500;color:var(--muted);opacity:0;transition:opacity .18s}
-.btn::after{content:"";position:absolute;left:0;bottom:-1px;height:2px;width:0;background:var(--violet);transition:width .22s}
-.btn.sel::after,.btn.active::after{width:100%}
-.btn.sel .lbl,.btn.active .lbl{transform:translateX(6px)}
-.btn.sel .hint{opacity:1}
-.btn.active .n{color:var(--text)}
-.btn.danger .n,.btn.danger.sel .lbl{color:var(--red)}
-.btn.danger::after{background:var(--red)}
-.btn.vip .n,.btn.vip.sel .lbl{color:var(--gold)}
-.btn.vip::after{background:var(--gold)}
-.badge{display:inline-block;margin-left:8px;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:800;
-  letter-spacing:1px;color:#1a1030;background:var(--gold);vertical-align:middle}
-/* état des récompenses VIP */
-.vstate{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--muted);white-space:nowrap}
-.vstate.ok{color:var(--green)}
-.vstate.ok::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 1.6s ease-in-out infinite}
-.vstate.gold{color:var(--gold)}
-@keyframes pulse{50%{opacity:.35}}
-.btn .arrow{margin-left:auto;color:var(--muted);font-size:14px;transition:transform .18s,color .18s}
-.btn.sel .arrow,.btn.active .arrow{color:var(--violet2);transform:translateX(3px)}
+.btn{position:relative;display:flex;align-items:center;gap:12px;height:42px;flex-shrink:0;padding:0 10px;border-radius:11px;
+  border:1px solid transparent;background:none;color:#cfc6e6;font:600 13.5px Inter,sans-serif;cursor:pointer;text-align:left;outline:none}
+.btn .i{width:28px;height:28px;flex-shrink:0;border-radius:8px;display:grid;place-items:center;background:rgba(255,255,255,.04);border:1px solid var(--line)}
+.btn .lbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn .n{margin-left:auto;font-size:10px;font-weight:700;color:var(--dim);letter-spacing:.5px}
+.btn .x + .n{display:none}
+.btn.sel{background:rgba(255,255,255,.04);color:var(--text)}
+.btn.sel .i{border-color:var(--line2)}
+.btn.active{background:linear-gradient(90deg,rgba(139,92,246,.22),rgba(139,92,246,.06));border-color:var(--line2);color:#fff}
+.btn.active::before,.btn.sel::before{content:"";position:absolute;left:-14px;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--violet);box-shadow:0 0 12px var(--violet)}
+.btn.active .i{background:rgba(139,92,246,.25);border-color:rgba(139,92,246,.5)}
+.btn.active .n,.btn.sel .n{color:var(--violet2)}
+.btn.danger .i{color:var(--red)}
+.btn.danger.sel{background:rgba(240,75,90,.08);color:#ff9aa4}
+.btn.danger.sel::before{background:var(--red);box-shadow:0 0 12px var(--red)}
+.badge{display:inline-block;margin-left:6px;padding:2px 5px;border-radius:4px;font-size:9px;font-weight:800;letter-spacing:1px;color:#1a1030;background:var(--gold);vertical-align:1px}
+.sep{height:1px;background:var(--line);margin:6px 6px;flex-shrink:0}
 
+/* état des récompenses VIP */
+@keyframes pulse{50%{opacity:.35}}
 /* interrupteur mode streamer */
-.switch{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted)}
-.switch i{position:relative;width:34px;height:18px;border-radius:9px;background:#2a1d47;border:1px solid var(--line2);transition:background .2s}
-.switch i::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s}
+.switch{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:10px;font-weight:800;letter-spacing:1px;color:var(--muted)}
+.switch i{position:relative;width:32px;height:17px;border-radius:9px;background:#2a1d47;border:1px solid var(--line2);transition:background .2s}
+.switch i::after{content:"";position:absolute;top:2px;left:2px;width:11px;height:11px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s}
 .btn.on .switch{color:var(--green)}
 .btn.on .switch i{background:rgba(34,197,94,.2);border-color:rgba(34,197,94,.5)}
-.btn.on .switch i::after{transform:translateX(16px);background:var(--green)}
+.btn.on .switch i::after{transform:translateX(15px);background:var(--green)}
 
-.spacer{flex:1;min-height:10px}
-.stats{display:flex;gap:22px;padding:14px 0;border-top:1px solid var(--line)}
-.stat .k{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:600}
-.stat .v{font-size:15px;font-weight:700;margin-top:3px}
-.stat .v .on{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:6px;vertical-align:middle}
-.foot{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}
-kbd{font:700 10px Inter,sans-serif;letter-spacing:1px;color:var(--text);padding:4px 7px;border-radius:5px;
-  border:1px solid var(--line2);background:rgba(255,255,255,.04);margin-right:6px;white-space:nowrap}
+.grow{flex:1;min-height:10px}
+.me{display:flex;align-items:center;gap:10px;padding:10px;border-radius:12px;background:var(--glass);border:1px solid var(--line2);flex-shrink:0}
+.me .av{width:36px;height:36px;flex-shrink:0;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;
+  background:linear-gradient(135deg,var(--violet),var(--violet3))}
+.me.masked .av{background:linear-gradient(135deg,#3b2a60,#241744)}
+.me b{display:block;font-size:13px}
+.me small{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+.resume{margin-top:10px;height:46px;flex-shrink:0;border:none;border-radius:12px;display:flex;align-items:center;gap:10px;padding:0 14px;cursor:pointer;
+  background:linear-gradient(135deg,#9d74ff,var(--violet3));color:#fff;font:700 14px Inter,sans-serif;
+  box-shadow:0 10px 30px rgba(139,92,246,.4),inset 0 1px 0 rgba(255,255,255,.25)}
+.resume kbd{margin-left:auto}
 
-/* ---------- Panneau droit (Règlement / Touches) ---------- */
-.view{position:relative;margin:44px 0 26px 44px;width:min(680px,calc(100vw - 440px - 88px));
-  display:flex;flex-direction:column;border-radius:16px;overflow:hidden;
-  background:linear-gradient(180deg,rgba(27,17,51,.95),rgba(16,9,32,.95));border:1px solid var(--line2);
-  box-shadow:0 30px 80px rgba(0,0,0,.5);
-  opacity:0;visibility:hidden;transform:translateX(-16px);transition:opacity .22s,transform .22s,visibility .22s}
-.view.show{opacity:1;visibility:visible;transform:none;transition:opacity .22s,transform .22s,visibility 0s}
-.vhead{padding:28px 32px 18px;border-bottom:1px solid var(--line)}
-.vtop{display:flex;align-items:center;justify-content:space-between;gap:16px}
-.vtag{font-size:11px;font-weight:700;letter-spacing:2.5px;color:var(--violet2);text-transform:uppercase}
-.vtitle{margin-top:6px;font-size:28px;font-weight:800}
-.vclose{background:none;border:1px solid var(--line2);color:var(--muted);border-radius:8px;height:34px;padding:0 12px;
-  font:700 11px Inter,sans-serif;letter-spacing:1px;cursor:pointer}
-.vclose:hover{color:var(--text);border-color:var(--violet)}
-.vintro{margin-top:10px;color:var(--muted);font-size:13px;line-height:1.5}
-.search{margin-top:16px;display:flex;align-items:center;gap:10px;height:42px;padding:0 14px;border-radius:10px;
-  background:rgba(255,255,255,.04);border:1px solid var(--line2)}
+/* ---------------- Zone principale ---------------- */
+.main{flex:1;min-width:0;display:flex;flex-direction:column;opacity:0;transform:translateY(8px);transition:opacity .25s .05s,transform .25s .05s}
+#app.show .main{opacity:1;transform:none}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;padding:2px 4px 14px}
+.crumb{font-size:10px;font-weight:700;letter-spacing:2.5px;color:var(--muted);text-transform:uppercase}
+.crumb b{color:var(--violet2);font-weight:700}
+.title{margin-top:6px;font-size:40px;font-weight:900;letter-spacing:-.5px;line-height:1;text-transform:uppercase}
+.chipset{display:flex;gap:2px;padding:4px;border-radius:11px;background:var(--panel2);border:1px solid var(--line2)}
+.chip{display:flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:7px;font-size:11.5px;font-weight:700;color:var(--muted)}
+.chip.on{color:var(--text)}
+.chip.on i{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+
+.stage{position:relative;flex:1;min-height:0;border-radius:18px;overflow:hidden;
+  background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line2);box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.pane{position:absolute;inset:0;display:none;flex-direction:column}
+.pane.on{display:flex;animation:fade .22s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.phead{padding:26px 30px 16px;border-bottom:1px solid var(--line)}
+.ptop{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.h2{font-size:22px;font-weight:800;margin-top:6px}
+.sub{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.5;max-width:720px}
+.back{background:none;border:1px solid var(--line2);color:var(--muted);border-radius:9px;height:32px;padding:0 12px;
+  font:700 10.5px Inter,sans-serif;letter-spacing:1px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.back:hover{color:var(--text);border-color:var(--violet)}
+.search{margin-top:14px;display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border-radius:10px;max-width:520px;
+  background:rgba(255,255,255,.03);border:1px solid var(--line2)}
 .search:focus-within{border-color:var(--violet)}
-.search svg{flex-shrink:0;opacity:.6}
-.search input{flex:1;background:none;border:none;outline:none;color:var(--text);font:500 14px Inter,sans-serif;user-select:text}
-.search input::placeholder{color:var(--muted)}
-.vbody{flex:1;overflow-y:auto;padding:8px 32px 28px}
-.vbody::-webkit-scrollbar{width:6px}
-.vbody::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+.search input{flex:1;background:none;border:none;outline:none;color:var(--text);font:500 13px Inter,sans-serif;user-select:text}
+.search input::placeholder{color:var(--dim)}
+.pbody{flex:1;overflow-y:auto;padding:6px 30px 26px}
+.pbody::-webkit-scrollbar{width:6px}
+.pbody::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
 
-.sec{margin-top:22px}
-.sec h3{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--violet2)}
+/* Aperçu */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:20px}
+.kpi{padding:16px;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid var(--line2);min-width:0}
+.kpi small{font-size:9.5px;font-weight:700;letter-spacing:1.5px;color:var(--muted)}
+.kpi b{display:block;font-size:22px;font-weight:800;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi span{display:block;font-size:11.5px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi span em{font-style:normal;color:var(--violet2);font-weight:700}
+.kpi.vip{border-color:rgba(245,197,66,.4);background:linear-gradient(135deg,rgba(245,197,66,.1),rgba(245,197,66,.02))}
+.kpi.vip b{color:var(--gold)}
+.kpi.vip.ok b{color:var(--green)}
+.kpi.vip{cursor:pointer;transition:border-color .15s}
+.kpi.vip:hover{border-color:var(--gold)}
+.blockt{margin-top:26px}
+.quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:12px}
+.qa{display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;border:1px solid var(--line2);background:rgba(255,255,255,.025);
+  color:var(--text);font:700 13px Inter,sans-serif;cursor:pointer;text-align:left}
+.qa:hover{border-color:var(--violet);background:rgba(139,92,246,.08)}
+.qa .i{width:34px;height:34px;flex-shrink:0;border-radius:10px;display:grid;place-items:center;background:rgba(139,92,246,.15);color:var(--violet2)}
+.qa.gold .i{background:rgba(245,197,66,.14);color:var(--gold)}
+.qa small{display:block;font-weight:500;color:var(--muted);font-size:11px;margin-top:2px}
+/* Aperçu "cinéma" : panneau à gauche, perso filmé par la caméra du jeu à droite */
+#app.cine{background:linear-gradient(90deg,rgba(7,4,15,.92) 0%,rgba(7,4,15,.6) 32%,rgba(7,4,15,.05) 62%,rgba(7,4,15,.0) 80%,rgba(7,4,15,.35) 100%)}
+.stage.cine{background:none;border-color:transparent;box-shadow:none;overflow:visible}
+#pane-overview{flex-direction:row;gap:22px}
+.ovl{width:min(620px,52%);flex-shrink:0;display:flex;flex-direction:column;min-height:0;border-radius:18px;overflow:hidden;
+  background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line2);box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.ovl .cards{grid-template-columns:1fr 1fr}
+.ovl .quick{grid-template-columns:1fr 1fr}
+.ovr{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-end;padding:0 6px 4px}
+.plate{max-width:100%;text-align:right;padding:18px 20px;border-radius:16px;
+  background:linear-gradient(180deg,rgba(12,7,24,0),rgba(12,7,24,.72) 40%);text-shadow:0 2px 14px rgba(0,0,0,.6)}
+.plate .eyebrow{justify-content:flex-end}
+.pnm{margin-top:6px;font-size:44px;font-weight:900;letter-spacing:-.5px;line-height:1.02;word-break:break-word}
+.ptags{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:6px;margin-top:12px}
+.tag{height:26px;display:flex;align-items:center;gap:5px;padding:0 10px;border-radius:8px;font-size:11px;font-weight:700;color:var(--muted);
+  background:rgba(12,7,24,.75);border:1px solid var(--line2);text-shadow:none}
+.tag b{color:var(--text)}
+.tag.job{color:#fff;background:linear-gradient(135deg,rgba(157,116,255,.9),rgba(109,63,224,.9));border-color:transparent}
+/* portrait de secours (véhicule, mur trop proche…) */
+.shot{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:220px;height:220px;border-radius:50%;display:none;place-items:center;overflow:hidden;
+  background:radial-gradient(circle at 50% 35%,rgba(139,92,246,.35),rgba(22,13,42,.9) 70%);border:2px solid rgba(180,156,255,.55);
+  box-shadow:0 0 0 8px rgba(139,92,246,.1),0 30px 80px rgba(0,0,0,.5)}
+.shot img{width:100%;height:100%;object-fit:cover;display:none}
+.shot img.ok{display:block}
+.shot img.ok + span{display:none}
+.shot span{font-size:64px;font-weight:900;color:var(--violet2)}
+.ovr.noprev .shot{display:grid}
+.av img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.me .av{overflow:hidden}
+
+/* Règlement / touches */
+.sec{margin-top:20px}
+.sec h3{display:flex;align-items:center;gap:10px;font-size:10.5px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--violet2)}
 .sec h3 span{color:var(--muted);font-weight:600;letter-spacing:1px}
 .sec h3::after{content:"";flex:1;height:1px;background:var(--line)}
-.rule{display:flex;gap:14px;padding:13px 0;border-bottom:1px solid rgba(45,31,74,.6)}
+.rule{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid rgba(42,29,71,.7)}
 .rule:last-child{border-bottom:none}
-.rule .num{flex-shrink:0;width:34px;font-size:12px;font-weight:700;color:var(--violet2);padding-top:2px}
-.rule .t{font-weight:700;font-size:14px}
-.rule .d{margin-top:3px;color:#c8bfe0;font-size:13.5px;line-height:1.5}
+.rule .num{flex-shrink:0;width:34px;font-size:11px;font-weight:800;color:var(--violet2);padding-top:2px}
+.rule .t{font-weight:700;font-size:13.5px}
+.rule .d{margin-top:3px;color:#c8bfe0;font-size:13px;line-height:1.5}
 mark{background:rgba(139,92,246,.35);color:var(--text);border-radius:3px;padding:0 2px}
 .empty{margin-top:40px;text-align:center;color:var(--muted);font-size:14px}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0 28px}
+.krow{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid rgba(42,29,71,.7)}
+.krow kbd{min-width:52px;text-align:center;font-size:10.5px;padding:6px 8px;border-bottom-width:3px}
+.krow span{font-size:13px;color:#dcd4ef}
+.knote{margin-top:20px;color:var(--muted);font-size:12px;line-height:1.5}
 
-.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 28px}
-.krow{display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid rgba(45,31,74,.6)}
-.krow kbd{min-width:52px;text-align:center;font-size:11px;padding:6px 8px;margin:0;border-bottom-width:3px}
-.krow span{font-size:14px;color:#dcd4ef}
-.knote{margin-top:22px;color:var(--muted);font-size:12px;line-height:1.5}
+/* Carte */
+#lmap{position:absolute;inset:0;background:rgb(31,127,195);font-family:Inter,sans-serif}
+#lmap.leaflet-container{background:rgb(31,127,195);outline:none}
+/* chaque tuile déborde de 2 px sur ses voisines, qui recouvrent son liseré de bord.
+   Leaflet 1.9 additionne les couleurs des tuiles (plus-lighter) : on repasse en mélange normal, sinon les
+   zones de chevauchement deviennent des lignes claires. Pas de clip-path non plus (lignes aux zooms intermédiaires). */
+#lmap .leaflet-tile{margin:-2px 0 0 -2px;mix-blend-mode:normal}
+.mtool{position:absolute;z-index:500;display:flex;align-items:center;gap:6px;padding:6px;border-radius:12px;
+  background:rgba(12,7,24,.93);border:1px solid var(--line2);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.msearch{top:14px;left:14px;width:min(360px,45%);flex-direction:column;align-items:stretch;padding:0}
+.msearch label{display:flex;align-items:center;gap:10px;height:42px;padding:0 12px}
+.msearch input{flex:1;min-width:0;background:none;border:none;outline:none;color:var(--text);font:500 12.5px Inter,sans-serif;user-select:text}
+.msearch input::placeholder{color:var(--dim)}
+.mres{max-height:260px;overflow-y:auto;border-top:1px solid var(--line);display:none}
+.mres.on{display:block}
+.mres::-webkit-scrollbar{width:4px}.mres::-webkit-scrollbar-thumb{background:var(--line2)}
+.mres button{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border:none;background:none;color:var(--text);
+  font:600 12.5px Inter,sans-serif;text-align:left;cursor:pointer}
+.mres button:hover,.mres button.sel{background:rgba(139,92,246,.15)}
+.mres button i{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.mres button small{margin-left:auto;color:var(--muted);font-size:10.5px;font-weight:600}
+.mbar{top:14px;right:14px}
+.mbar button,.zoom button{height:30px;min-width:30px;padding:0 10px;border-radius:8px;border:1px solid transparent;background:none;
+  color:#cfc6e6;font:700 11.5px Inter,sans-serif;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+.mbar button:hover,.zoom button:hover{background:rgba(255,255,255,.06)}
+.mbar button.on{background:rgba(139,92,246,.25);border-color:rgba(139,92,246,.55);color:#fff}
+.mbar .vsep{width:1px;height:18px;background:var(--line2);margin:0 2px}
+.zoom{right:14px;top:50%;transform:translateY(-50%);flex-direction:column}
+.zoom button{font-size:15px;padding:0}
+.where{left:14px;bottom:60px;flex-direction:column;align-items:stretch;gap:8px;padding:10px;width:280px}
+.where .row{display:flex;align-items:center;gap:10px}
+.where .pin{width:30px;height:30px;flex-shrink:0;border-radius:50%;display:grid;place-items:center;background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.5)}
+.where .pin i{width:10px;height:10px;border-radius:50%;background:var(--violet2);box-shadow:0 0 10px var(--violet)}
+.where small{display:block;font-size:9px;font-weight:700;letter-spacing:1.5px;color:var(--muted)}
+.where b{display:block;font-size:12.5px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.where .zn{font-size:11px;color:var(--muted);margin-top:1px}
+.where .dir{margin-left:auto;font-size:10px;font-weight:800;color:var(--violet2);border:1px solid var(--line2);border-radius:6px;padding:3px 6px}
+/* légende « Lieux » : un œil par catégorie et par type de lieu pour masquer des blips (mémorisé) */
+.legend{right:14px;bottom:60px;width:250px;max-height:calc(50% - 120px);flex-direction:column;align-items:stretch;gap:0;padding:0;overflow:hidden}
+.lg-head{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 12px;flex-shrink:0}
+.lg-head b{font-size:12px;font-weight:800}
+.lg-head small{color:var(--muted);font-size:10.5px;font-weight:700}
+.lg-head .sp{flex:1}
+.lg-head button{height:24px;padding:0 8px;border-radius:7px;border:1px solid var(--line2);background:none;color:#cfc6e6;font:700 10px Inter,sans-serif;cursor:pointer}
+.lg-head button:hover{border-color:var(--violet)}
+.lg-head .lg-min{width:24px;padding:0;display:grid;place-items:center}
+.lg-head .lg-min svg{transition:transform .15s}
+.legend.min .lg-head .lg-min svg{transform:rotate(180deg)}
+.lg-list{overflow-y:auto;border-top:1px solid var(--line);padding:4px 0}
+.legend.min .lg-list{display:none}
+.lg-list::-webkit-scrollbar{width:4px}.lg-list::-webkit-scrollbar-thumb{background:var(--line2)}
+.lg-cat,.lg-row{display:flex;align-items:center;padding:0 6px 0 4px}
+.lg-name{flex:1;min-width:0;display:flex;align-items:center;gap:8px;height:28px;padding:0 6px 0 8px;border:none;border-radius:7px;background:none;
+  color:#e3dcf3;font:700 11px Inter,sans-serif;text-align:left;cursor:pointer}
+.lg-name:hover{background:rgba(255,255,255,.05)}
+.lg-name i{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.lg-name span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lg-name em{margin-left:auto;font-style:normal;color:var(--muted);font-size:10px;font-weight:700}
+.lg-name .chev{flex-shrink:0;color:var(--dim);transition:transform .15s}
+.lg-cat.open .chev{transform:rotate(90deg)}
+.lg-row .lg-name{height:24px;padding-left:26px;color:#cfc6e6;font-weight:600}
+.lg-eye{width:26px;height:24px;flex-shrink:0;display:grid;place-items:center;border:none;border-radius:7px;background:none;color:var(--violet2);cursor:pointer}
+.lg-eye:hover{background:rgba(255,255,255,.06)}
+.lg-cat.off .lg-name,.lg-row.off .lg-name{opacity:.38}
+.lg-cat.off .lg-eye,.lg-row.off .lg-eye{color:var(--dim)}
+.lg-sub{display:none}
+.lg-sub.on{display:block}
+.lg-empty{padding:12px;color:var(--muted);font-size:11px;text-align:center}
+#lmap .leaflet-route-pane path{filter:drop-shadow(0 0 4px rgba(139,92,246,.8))}
+
+/* ---------- Carte réaliste : la caméra du jeu au-dessus de la ville, marqueurs posés par-dessus ---------- */
+#r3d{position:fixed;inset:0;display:none;z-index:50;cursor:grab;overflow:hidden}
+body.r3d #r3d{display:block}
+body.r3d #app{opacity:0;visibility:hidden;transition:none}
+#r3d.drag{cursor:grabbing}
+#r3d.turn{cursor:move}
+#r3d::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at center,rgba(0,0,0,0) 55%,rgba(5,3,10,.55) 100%)}
+.r3-route{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.r3-route path{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.r3-route .gl{stroke:rgba(139,92,246,.45);stroke-width:12}
+.r3-route .ln{stroke:#c4b0ff;stroke-width:4.5}
+.r3-mk{position:absolute;left:0;top:0;display:none;cursor:pointer;will-change:transform}
+.r3-mk .sq{position:absolute;left:-10px;top:-10px;width:20px;height:20px;border-radius:6px;border:2px solid rgba(0,0,0,.6);box-shadow:0 3px 8px rgba(0,0,0,.55)}
+.r3-mk .st{position:absolute;left:-1px;top:10px;width:2px;height:16px;background:linear-gradient(rgba(255,255,255,.7),rgba(255,255,255,0))}
+.r3-mk.dot .sq{left:-6px;top:-6px;width:12px;height:12px;border-radius:50%;border-width:1.5px}
+.r3-mk.dot .st{top:6px;height:12px}
+.r3-mk .lb{position:absolute;left:0;bottom:14px;transform:translateX(-50%);white-space:nowrap;padding:3px 8px;border-radius:6px;
+  background:rgba(12,7,24,.92);border:1px solid var(--line2);color:var(--text);font:700 10.5px Inter,sans-serif;pointer-events:none}
+.r3-mk.nl .lb{display:none}
+.r3-mk:hover{z-index:200000!important}
+.r3-mk:hover .lb{display:block}
+.r3-mk.me{cursor:default}
+.r3-mk.me .sq{left:-9px;top:-9px;width:18px;height:18px;border-radius:50%;background:#b49cff;border:3px solid #fff;box-shadow:0 0 0 6px rgba(139,92,246,.35),0 3px 8px rgba(0,0,0,.5)}
+.r3-mk.wp{cursor:default}
+.r3-mk.wp svg{position:absolute;left:-14px;top:-36px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
+.r3-title{top:14px;left:14px;gap:10px;padding:6px 14px 6px 6px}
+.r3-title button{width:34px;height:34px;border-radius:9px;border:1px solid var(--line2);background:none;color:var(--text);display:grid;place-items:center;cursor:pointer}
+.r3-title button:hover{border-color:var(--violet)}
+.r3-title b{display:block;font-size:13px;font-weight:800}
+.r3-title small{display:block;color:var(--muted);font-size:10.5px;font-weight:600;margin-top:1px}
+.r3-hint{left:50%;bottom:14px;transform:translateX(-50%);gap:16px;padding:8px 14px;font-size:10.5px;color:var(--muted);white-space:nowrap}
+.r3-hint span{display:flex;align-items:center;gap:6px}
+#curtain{position:fixed;inset:0;z-index:100;background:#05030a;opacity:0;pointer-events:none;transition:opacity .25s}
+#curtain.on{opacity:1;pointer-events:auto}
+.dest{left:14px;right:14px;bottom:14px;height:38px;padding:0 6px 0 12px;font-size:11.5px;color:var(--muted)}
+.dest b{color:var(--text)}
+.dest .r{margin-left:auto;display:flex;align-items:center;gap:12px;color:var(--dim);font-size:10.5px}
+.dest .r span{display:flex;align-items:center;gap:5px}
+.dest .clr{height:26px;padding:0 10px;border-radius:7px;border:1px solid rgba(240,75,90,.45);background:none;color:#ff9aa4;font:700 10.5px Inter,sans-serif;cursor:pointer;display:none}
+.dest.has .clr{display:block}
+.moff{position:absolute;inset:0;display:none;place-items:center;text-align:center;color:var(--muted);font-size:13px;z-index:600;background:var(--panel2)}
+.moff.on{display:grid}
+.moff b{display:block;color:var(--text);font-size:16px;margin-bottom:6px}
+.moff button{margin-top:14px}
+/* marqueurs */
+.me-mk{position:relative;width:40px;height:40px}
+.me-mk::before{content:"";position:absolute;inset:0;border-radius:50%;background:rgba(139,92,246,.28);border:1.5px solid #b49cff;animation:ring 2s ease-out infinite}
+.me-mk svg{position:absolute;left:10px;top:10px}
+@keyframes ring{0%{transform:scale(.5);opacity:1}100%{transform:scale(1.2);opacity:0}}
+.wp-mk svg{filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
+.leaflet-tooltip.mlb{background:rgba(12,7,24,.92);border:1px solid var(--line2);color:var(--text);font:700 10.5px Inter,sans-serif;
+  padding:3px 7px;border-radius:6px;box-shadow:none}
+.leaflet-tooltip.mlb::before{display:none}
+
+.hint{display:flex;justify-content:flex-end;gap:14px;padding:10px 4px 0;font-size:10.5px;color:var(--dim);flex-wrap:wrap}
+.hint span{display:flex;align-items:center;gap:6px}
 
 /* ---------- Petits écrans : tout le menu reste visible ---------- */
 @media (max-height: 900px){
-  .panel{padding:30px 36px 18px}
-  .logo{font-size:36px}
-  .sub{margin-top:6px}
-  .tag{margin-top:14px}
-  .card{margin-top:12px;padding:10px 14px}
-  .avatar{width:38px;height:38px;font-size:14px}
-  .menu{margin-top:8px}
-  .btn{padding:9px 2px;font-size:15px}
-  .stats{padding:10px 0}
-  .view{margin:30px 0 18px 36px}
+  .side .eyebrow{margin-top:14px}
+  .paused{font-size:32px}
+  .menu{margin-top:10px;gap:2px}
+  .btn{height:37px}
+  .btn .i{width:25px;height:25px}
+  .title{font-size:34px}
 }
 @media (max-height: 760px){
-  .tag{display:none}
-  .logo{font-size:32px}
-  .btn{padding:8px 2px}
-  .stats{padding:8px 0 10px}
-  .stat .v{font-size:14px}
+  .side .eyebrow{display:none}
+  .paused{margin-top:12px;font-size:26px}
+  .btn{height:33px;font-size:13px}
+  .btn .i{width:22px;height:22px}
+  .me{padding:7px}
+  .me .av{width:30px;height:30px}
+  .resume{height:40px;margin-top:8px}
+  .title{font-size:30px}
 }
 
 /* ---------- Modal quitter ---------- */
 .modal{position:fixed;inset:0;display:grid;place-items:center;background:rgba(6,3,12,.6);
   opacity:0;visibility:hidden;transition:opacity .18s,visibility .18s}
 .modal.show{opacity:1;visibility:visible}
-.box{width:420px;padding:28px 28px 24px;border-radius:14px;background:linear-gradient(180deg,#1d1238,#130a26);
+.box{width:420px;padding:26px;border-radius:16px;background:linear-gradient(180deg,#1d1238,#130a26);
   border:1px solid var(--line2);box-shadow:0 30px 80px rgba(0,0,0,.6);transform:scale(.96);transition:transform .18s}
 .modal.show .box{transform:none}
-.box h2{font-size:20px;font-weight:800}
-.box p{margin-top:10px;color:var(--muted);font-size:14px;line-height:1.5}
+.box .eyebrow{color:#ff9aa4}
+.box .eyebrow::before{background:var(--red)}
+.box h2{margin-top:8px;font-size:20px;font-weight:800}
+.box p{margin-top:8px;color:var(--muted);font-size:13.5px;line-height:1.5}
 .err{margin-top:12px;color:var(--red);font-size:13px;font-weight:600;min-height:18px}
-.actions{margin-top:18px;display:flex;gap:10px}
-.act{flex:1;height:46px;border-radius:9px;border:1px solid var(--line2);background:rgba(255,255,255,.04);
-  color:var(--text);font:700 14px Inter,sans-serif;cursor:pointer;position:relative;overflow:hidden}
+.actions{margin-top:16px;display:flex;gap:10px}
+.act{flex:1;height:46px;border-radius:11px;border:1px solid var(--line2);background:rgba(255,255,255,.04);
+  color:var(--text);font:700 13.5px Inter,sans-serif;cursor:pointer;position:relative;overflow:hidden}
 .act:hover{border-color:var(--violet)}
 .act.quit{border-color:rgba(240,75,90,.5);color:#fff}
 .act.quit .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--red)}
@@ -173,72 +353,174 @@ mark{background:rgba(139,92,246,.35);color:var(--text);border-radius:3px;padding
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8z" fill="currentColor"/></symbol>
+    <symbol id="i-map" viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2ZM9 4v14M15 6v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-set" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></g></symbol>
+    <symbol id="i-rules" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h3"/></g></symbol>
+    <symbol id="i-keys" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></g></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l18 18M10.6 6.1A9.6 9.6 0 0 1 12 6c5 0 8.5 4.5 9.5 6a17 17 0 0 1-2.6 3.2M6.6 7.6A16 16 0 0 0 2.5 12c1 1.5 4.5 6 9.5 6 1.6 0 3-.4 4.3-1"/></g></symbol>
+    <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4h11l-1.5 4L16 12H5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-gift" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3.5" y="8" width="17" height="4" rx="1"/><path d="M5 12v8h14v-8M12 8v12M12 8S10.5 4 8.5 4 6 6.5 8 8M12 8s1.5-4 3.5-4S18 6.5 16 8"/></g></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+    <symbol id="i-exit" viewBox="0 0 24 24"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-eyeon" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2.5 12C3.5 10.5 7 6 12 6s8.5 4.5 9.5 6c-1 1.5-4.5 6-9.5 6s-8.5-4.5-9.5-6Z"/><circle cx="12" cy="12" r="2.6"/></g></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></g></symbol>
+  </defs>
+</svg>
+
 <div id="app">
-  <aside class="panel">
-    <div>
-      <div class="logo"><span id="srv">ASH</span><span class="dot"></span></div>
-      <div class="sub" id="subtitle">City / Roleplay</div>
-      <div class="tag">Menu pause</div>
+  <!-- ======== Sidebar ======== -->
+  <aside class="side">
+    <div class="brand">
+      <div class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 21M12 3l8 18M7.5 14h9"/></svg></div>
+      <div><b><span id="srv">ASH</span><i></i></b><small id="subtitle">City / Roleplay</small></div>
     </div>
+    <div class="eyebrow">Menu principal</div>
+    <div class="paused">PAUSE</div>
 
-    <div class="card" id="card">
-      <div class="avatar" id="avatar">?</div>
-      <div>
-        <div class="pname" id="pname">—</div>
-        <div class="pjob" id="pjob">—</div>
-        <div class="pids">ID <b id="pid">0</b> · CID <b id="pcid">—</b></div>
-      </div>
-    </div>
-
+    <!-- Ordre identique à l'ancien menu : les touches 1 à 0 gardent les mêmes actions -->
     <nav class="menu" id="menu">
-      <button class="btn" data-action="resume"><span class="n"></span><span class="lbl">Reprendre</span><span class="hint">Retour en jeu</span></button>
-      <button class="btn" data-action="map"><span class="n"></span><span class="lbl">Carte</span><span class="hint">Menu GTA</span></button>
-      <button class="btn" data-action="settings"><span class="n"></span><span class="lbl">Paramètres</span><span class="hint">Graphismes, son, touches</span></button>
-      <button class="btn" data-action="rules" data-view="rules"><span class="n"></span><span class="lbl">Règlement</span><span class="arrow">›</span></button>
-      <button class="btn" data-action="keys" data-view="keys"><span class="n"></span><span class="lbl">Touches</span><span class="arrow">›</span></button>
-      <button class="btn" data-action="streamer" id="btnStreamer"><span class="n"></span><span class="lbl">Mode streamer</span><span class="switch"><b id="swLbl">OFF</b><i></i></span></button>
-      <button class="btn" data-action="report" id="btnReport"><span class="n"></span><span class="lbl">Signaler / Report</span><span class="hint">Contacter le staff</span></button>
-      <button class="btn" data-action="discord" id="btnDiscord"><span class="n"></span><span class="lbl">Discord</span><span class="hint">Ouvrir le lien</span></button>
-      <button class="btn vip" data-action="vipdaily" id="btnVipDaily"><span class="n"></span><span class="lbl">Récompenses VIP</span><span class="vstate" id="vdState">…</span></button>
-      <button class="btn vip" data-action="shop" id="btnShop"><span class="n"></span><span class="lbl">Boutique VIP <span class="badge">VIP</span></span><span class="hint">Soutenir le serveur</span></button>
-      <button class="btn danger" data-action="quit"><span class="n"></span><span class="lbl">Quitter la session</span><span class="hint">Déconnexion</span></button>
+      <button class="btn" data-action="resume"><span class="i"><svg width="12" height="12"><use href="#i-play"/></svg></span><span class="lbl">Reprendre</span><span class="n"></span></button>
+      <button class="btn" data-action="map"><span class="i"><svg width="14" height="14"><use href="#i-map"/></svg></span><span class="lbl">Carte</span><span class="n"></span></button>
+      <button class="btn" data-action="settings"><span class="i"><svg width="14" height="14"><use href="#i-set"/></svg></span><span class="lbl">Paramètres</span><span class="n"></span></button>
+      <button class="btn" data-action="rules" data-view="rules"><span class="i"><svg width="14" height="14"><use href="#i-rules"/></svg></span><span class="lbl">Règlement</span><span class="n"></span></button>
+      <button class="btn" data-action="keys" data-view="keys"><span class="i"><svg width="14" height="14"><use href="#i-keys"/></svg></span><span class="lbl">Touches</span><span class="n"></span></button>
+      <button class="btn" data-action="streamer" id="btnStreamer"><span class="i"><svg width="14" height="14"><use href="#i-eye"/></svg></span><span class="lbl">Mode streamer</span><span class="switch x"><b id="swLbl">OFF</b><i></i></span><span class="n"></span></button>
+      <button class="btn" data-action="report" id="btnReport"><span class="i"><svg width="14" height="14"><use href="#i-flag"/></svg></span><span class="lbl">Signaler / Report</span><span class="n"></span></button>
+      <button class="btn" data-action="discord" id="btnDiscord"><span class="i"><svg width="14" height="14"><use href="#i-chat"/></svg></span><span class="lbl">Discord</span><span class="n"></span></button>
+      <button class="btn vip" data-action="shop" id="btnShop"><span class="i"><svg width="14" height="14"><use href="#i-star"/></svg></span><span class="lbl">Boutique <span class="badge">VIP</span></span><span class="n"></span></button>
+      <div class="sep"></div>
+      <button class="btn danger" data-action="quit"><span class="i"><svg width="14" height="14"><use href="#i-exit"/></svg></span><span class="lbl">Quitter la session</span><span class="n"></span></button>
     </nav>
 
-    <div class="spacer"></div>
+    <div class="grow"></div>
 
-    <div class="stats">
-      <div class="stat"><div class="k">Joueurs</div><div class="v"><span class="on"></span><span id="players">—</span></div></div>
-      <div class="stat"><div class="k">Session</div><div class="v" id="session">0 min</div></div>
-      <div class="stat"><div class="k">Heure</div><div class="v" id="clock">--:--</div></div>
+    <div class="me" id="card">
+      <div class="av" id="avatar">?</div>
+      <div style="min-width:0"><b id="pname">—</b><small id="pjob">—</small></div>
     </div>
-    <div class="foot">
-      <span><kbd>↑↓</kbd>Naviguer <kbd style="margin-left:8px">ENTRÉE</kbd>Valider</span>
-      <span><kbd>ÉCHAP</kbd><span id="escLbl">Fermer</span></span>
-    </div>
+    <button class="resume" id="resumeBig"><svg width="12" height="12"><use href="#i-play"/></svg>Reprendre<kbd>ÉCHAP</kbd></button>
   </aside>
 
-  <section class="view" id="view">
-    <div class="vhead">
-      <div class="vtop">
-        <div>
-          <div class="vtag" id="vtag">—</div>
-          <div class="vtitle" id="vtitle">—</div>
-        </div>
-        <button class="vclose" id="vclose">RETOUR</button>
+  <!-- ======== Zone principale ======== -->
+  <main class="main">
+    <div class="top">
+      <div>
+        <div class="crumb"><b id="crumbSrv">ASH</b> &nbsp;/&nbsp; <span id="crumb">Menu pause</span></div>
+        <div class="title" id="title">Aperçu</div>
       </div>
-      <div class="vintro" id="vintro"></div>
-      <label class="search" id="searchBox">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b49cff" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input id="search" type="text" placeholder="Rechercher une règle…" autocomplete="off" spellcheck="false">
-      </label>
+      <div class="chipset">
+        <span class="chip on"><i></i><span id="players">—</span></span>
+        <span class="chip" id="session">0 min</span>
+        <span class="chip" id="clock">--:--</span>
+      </div>
     </div>
-    <div class="vbody" id="vbody"></div>
-  </section>
+
+    <section class="stage">
+      <!-- Aperçu (vue par défaut) -->
+      <div class="pane on" id="pane-overview">
+       <div class="ovl">
+        <div class="phead">
+          <div class="eyebrow">Ta session</div>
+          <div class="h2" id="hello">Bon retour</div>
+          <div class="sub">Tout ce qu'il faut savoir avant de reprendre. Les touches <b>1</b> à <b>0</b> lancent directement les actions du menu.</div>
+        </div>
+        <div class="pbody">
+          <div class="cards">
+            <div class="kpi"><small>MÉTIER</small><b id="kJobName">—</b><span id="kJob">—</span></div>
+            <div class="kpi"><small>IDENTIFIANTS</small><b>ID <span style="display:inline;font-size:inherit;color:var(--violet2)" id="pid">—</span></b><span>CitizenID <em id="pcid">—</em></span></div>
+            <div class="kpi"><small>TEMPS DE SESSION</small><b id="kSession">0 min</b><span id="kSince">—</span></div>
+            <div class="kpi vip" id="kVip"><small>RÉCOMPENSE VIP</small><b id="kVipState">…</b><span id="kVipSub">ash_vipdaily</span></div>
+          </div>
+
+          <div class="eyebrow blockt">Accès rapide</div>
+          <div class="quick">
+            <button class="qa" data-run="rules"><span class="i"><svg width="16" height="16"><use href="#i-rules"/></svg></span><span>Règlement<small>Rechercher une règle</small></span></button>
+            <button class="qa" data-run="report" id="qaReport"><span class="i"><svg width="16" height="16"><use href="#i-flag"/></svg></span><span>Report<small>Contacter le staff</small></span></button>
+            <button class="qa" data-run="discord" id="qaDiscord"><span class="i"><svg width="16" height="16"><use href="#i-chat"/></svg></span><span>Discord<small>Rejoindre la communauté</small></span></button>
+            <button class="qa gold" data-run="shop" id="qaShop"><span class="i"><svg width="16" height="16"><use href="#i-star"/></svg></span><span>Boutique VIP<small>Soutenir le serveur</small></span></button>
+          </div>
+        </div>
+       </div>
+
+       <!-- Zone transparente : la caméra du jeu y cadre le personnage -->
+       <div class="ovr">
+         <div class="shot" id="shotWrap"><img id="shot" alt=""><span id="shotIni">?</span></div>
+         <div class="plate">
+           <div class="eyebrow">Ton personnage</div>
+           <div class="pnm" id="kName">—</div>
+           <div class="ptags">
+             <span class="tag job" id="tJob">—</span>
+             <span class="tag">ID <b id="tId">—</b></span>
+             <span class="tag">CID <b id="tCid">—</b></span>
+           </div>
+         </div>
+       </div>
+      </div>
+
+      <!-- Carte -->
+      <div class="pane" id="pane-map">
+        <div id="lmap"></div>
+
+        <div class="mtool msearch">
+          <label><svg width="15" height="15" style="color:var(--violet2);flex-shrink:0"><use href="#i-search"/></svg>
+            <input id="msearch" type="text" placeholder="Rechercher un lieu, un service, une boutique…" autocomplete="off" spellcheck="false"></label>
+          <div class="mres" id="mres"></div>
+        </div>
+        <div class="mtool mbar" id="mbar">
+          <span id="layerBtns" style="display:flex;gap:4px"></span>
+          <span class="vsep"></span>
+          <button id="btnLabels" class="on">Noms</button>
+          <button id="btnNative" title="Ouvrir la carte GTA"><svg width="13" height="13"><use href="#i-map"/></svg>Carte GTA</button>
+        </div>
+        <div class="mtool zoom">
+          <button id="zin" title="Zoom +">+</button><button id="zout" title="Zoom −">−</button>
+          <button id="zme" title="Me centrer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+        </div>
+        <div class="mtool where">
+          <div class="row"><div class="pin"><i></i></div><div style="min-width:0"><small>TU ES À</small><b id="mStreet">—</b><div class="zn" id="mZone"></div></div><span class="dir" id="mDir">—</span></div>
+        </div>
+        <div class="mtool legend" id="legend"></div>
+        <div class="mtool dest" id="dest">
+          <span id="dtx">Clique sur la carte pour placer un point GPS</span>
+          <span class="r"><span><kbd>CLIC</kbd> Point GPS</span><span><kbd>CLIC DROIT</kbd> Effacer</span><span><kbd>MOLETTE</kbd> Zoom</span>
+            <button class="clr" id="dclr">Effacer le point</button></span>
+        </div>
+        <div class="moff" id="moff"><div><b>Carte indisponible</b>Les images de la carte n'ont pas pu être chargées.<br><button class="back" id="moffNative" style="margin:14px auto 0">OUVRIR LA CARTE GTA</button></div></div>
+      </div>
+
+      <!-- Règlement / Touches -->
+      <div class="pane" id="pane-view">
+        <div class="phead">
+          <div class="ptop">
+            <div><div class="eyebrow" id="vtag">—</div><div class="h2" id="vtitle">—</div></div>
+            <button class="back" id="vclose"><svg width="12" height="12"><use href="#i-back"/></svg>RETOUR</button>
+          </div>
+          <div class="sub" id="vintro"></div>
+          <label class="search" id="searchBox">
+            <svg width="15" height="15" style="color:var(--violet2);flex-shrink:0"><use href="#i-search"/></svg>
+            <input id="search" type="text" placeholder="Rechercher une règle…" autocomplete="off" spellcheck="false">
+          </label>
+        </div>
+        <div class="pbody" id="vbody"></div>
+      </div>
+    </section>
+
+    <div class="hint">
+      <span><kbd>↑↓</kbd> Naviguer</span><span><kbd>ENTRÉE</kbd> Valider</span><span><kbd>1-0</kbd> Raccourcis</span><span><kbd>ÉCHAP</kbd> <span id="escLbl">Reprendre</span></span>
+    </div>
+  </main>
 </div>
 
 <div class="modal" id="modal">
   <div class="box">
-    <h2>Quitter ASH City ?</h2>
+    <div class="eyebrow">Déconnexion</div>
+    <h2 id="quitTitle">Quitter ASH City ?</h2>
     <p>Ton personnage sera sauvegardé et tu seras déconnecté du serveur.</p>
     <div class="err" id="err"></div>
     <div class="actions">
@@ -248,15 +530,35 @@ mark{background:rgba(139,92,246,.35);color:var(--text);border-radius:3px;padding
   </div>
 </div>
 
+<!-- Carte réaliste : par-dessus la caméra du jeu, le reste du menu est masqué -->
+<div id="r3d">
+  <svg class="r3-route"><path class="gl" id="r3gl"/><path class="ln" id="r3ln"/></svg>
+  <div id="r3marks"></div>
+  <div class="mtool r3-title">
+    <button id="r3back" title="Carte plane"><svg width="16" height="16"><use href="#i-back"/></svg></button>
+    <div><b id="r3zone">Los Santos</b><small id="r3srv">ASH</small></div>
+  </div>
+  <div class="mtool mbar" id="r3bar"></div>
+  <div class="mtool zoom">
+    <button id="r3in" title="Zoom +">+</button><button id="r3out" title="Zoom −">−</button>
+    <button id="r3me" title="Me centrer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+  </div>
+  <div class="mtool r3-hint">
+    <span><kbd>CLIC</kbd> Point GPS</span><span><kbd>GLISSER</kbd> Déplacer</span><span><kbd>CLIC DROIT</kbd> Tourner / incliner</span>
+    <span><kbd>MOLETTE</kbd> Zoom</span><span><kbd>ÉCHAP</kbd> Carte plane</span>
+  </div>
+</div>
+<div id="curtain"></div>
+
 <script>
-const RES = typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'ash_pausemenu';
+const RES =typeof GetParentResourceName === 'function' ? GetParentResourceName() : 'ash_pausemenu';
 const post = (name, data = {}) =>
   fetch(`https://${RES}/${name}`, {method:'POST', headers:{'Content-Type':'application/json; charset=UTF-8'}, body:JSON.stringify(data)})
     .then(r => r.json()).catch(() => ({}));
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const app = $('app'), modal = $('modal'), view = $('view'), search = $('search');
+const app = $('app'), modal = $('modal'), search = $('search');
 
 let cfg = {hold:1500};
 let data = {rules:[], rulesIntro:'', keys:[]};
@@ -274,39 +576,70 @@ function select(i){
   list[sel].scrollIntoView({block:'nearest'});
 }
 function renumber(){
-  buttons().forEach((b, i) => b.querySelector('.n').textContent = String(i + 1).padStart(2, '0'));
+  buttons().forEach((b, i) => b.querySelector('.n').textContent = i < 10 ? String((i + 1) % 10) : '');
 }
 
-/* ---------- Carte joueur / streamer ---------- */
+/* ---------- Portrait + aperçu du perso ---------- */
+let headshotUrl = null;
+function setHeadshot(txd){
+  headshotUrl = txd ? `https://nui-img/${txd}/${txd}?t=${Date.now()}` : null;
+  const img = $('shot');
+  img.onload = () => renderPlayer();
+  img.onerror = () => { headshotUrl = null; renderPlayer(); };
+  if (headshotUrl) img.src = headshotUrl;
+  renderPlayer();
+}
+// Dit au Lua quelle vue est affichée : caméra sur le perso dans l'Aperçu, flou ailleurs
+function notifyView(name){
+  const ov = name === 'overview';
+  app.classList.toggle('cine', ov);
+  document.querySelector('.stage').classList.toggle('cine', ov);
+  if (ov) $('pane-overview').querySelector('.ovr').classList.remove('noprev');
+  post('view', {name}).then(r => {
+    if (ov && currentView === null) $('pane-overview').querySelector('.ovr').classList.toggle('noprev', !(r && r.preview));
+  });
+}
+
+/* ---------- Joueur / streamer ---------- */
 function renderPlayer(){
   const p = player;
+  const job = p.grade ? `${p.job} · ${p.grade}` : (p.job || '—');
   $('card').classList.toggle('masked', streamer);
   $('pname').textContent = streamer ? 'Mode streamer' : (p.name || '—');
-  $('pjob').textContent = p.grade ? `${p.job} · ${p.grade}` : (p.job || '—');
-  $('pid').textContent = streamer ? '•••' : (p.id ?? '—');
-  $('pcid').textContent = streamer ? '•••••' : (p.citizenid || '—');
-  $('avatar').textContent = streamer ? '◉' : (p.name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  $('pjob').textContent = job;
+  const ini = streamer ? '◉' : (p.name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  $('avatar').innerHTML = !streamer && headshotUrl ? `<img src="${esc(headshotUrl)}" alt="">` : esc(ini);
+  $('shotIni').textContent = ini;
+  $('shot').classList.toggle('ok', !streamer && !!headshotUrl && $('shot').complete && $('shot').naturalWidth > 0);
+  $('kName').textContent = streamer ? 'Mode streamer' : (p.name || '—');
+  $('kJobName').textContent = p.job || '—';
+  $('kJob').textContent = p.grade || '—';
+  $('tJob').textContent = job;
+  $('pid').textContent = $('tId').textContent = streamer ? '•••' : (p.id ?? '—');
+  $('pcid').textContent = $('tCid').textContent = streamer ? '•••••' : (p.citizenid || '—');
+  $('hello').textContent = streamer ? 'Bon retour' : `Bon retour, ${(p.name || '').split(' ')[0] || 'citoyen'}`;
   $('btnStreamer').classList.toggle('on', streamer);
   $('swLbl').textContent = streamer ? 'ON' : 'OFF';
 }
 
 /* ---------- Horloge / session ---------- */
+const pad2 = n => String(n).padStart(2, '0');
 function fmtSession(s){
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
-  return h ? `${h}h ${String(m).padStart(2,'0')}min` : `${m} min`;
+  return h ? `${h}h ${pad2(m)}min` : `${m} min`;
 }
 function tick(){
   sessionSec++;
-  $('session').textContent = fmtSession(sessionSec);
+  $('session').textContent = $('kSession').textContent = fmtSession(sessionSec);
   const d = new Date();
-  $('clock').textContent = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  $('clock').textContent = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 
-/* ---------- Panneau droit ---------- */
+/* ---------- Règlement / touches ---------- */
 function highlight(text, q){
   const safe = esc(text);
   if (!q) return safe;
-  const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+  const re = new RegExp('(' + esc(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
   return safe.replace(re, '<mark>$1</mark>');
 }
 const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -331,25 +664,38 @@ function renderRules(){
   $('vbody').innerHTML = total ? html : `<div class="empty">Aucune règle ne correspond à « ${esc(q)} ».</div>`;
 }
 
+const keyRow = b => `<div class="krow"><kbd>${esc(b.key)}</kbd><span>${esc(b.label)}</span></div>`;
 function renderKeys(){
   let html = '';
   (data.keys || []).forEach(sec => {
-    html += `<div class="sec"><h3>${esc(sec.title)}</h3><div class="kgrid">`;
-    (sec.binds || []).forEach(b => { html += `<div class="krow"><kbd>${esc(b.key)}</kbd><span>${esc(b.label)}</span></div>`; });
-    html += '</div></div>';
+    html += `<div class="sec"><h3>${esc(sec.title)}</h3><div class="kgrid">${(sec.binds || []).map(keyRow).join('')}</div></div>`;
   });
   html += `<div class="knote">Tu peux modifier la plupart de ces touches dans Paramètres › Raccourcis clavier › FiveM.</div>`;
   $('vbody').innerHTML = html;
 }
 
+function setTitle(crumb, title){ $('crumb').textContent = crumb; $('title').textContent = title; }
+
 function openView(name){
   if (currentView === name) { closeView(); return; }
   currentView = name;
   document.querySelectorAll('.btn[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === name));
-  $('vtag').textContent = document.querySelector(`.btn[data-view="${name}"] .n`).textContent + ' · ' + cfg.server;
+  $('pane-overview').classList.remove('on');
+  $('pane-view').classList.remove('on');
+  $('pane-map').classList.remove('on');
+  $('escLbl').textContent = 'Retour';
+  notifyView(name);
+  if (name === 'map') {
+    setTitle('Carte de la ville', 'Los Santos');
+    $('pane-map').classList.add('on');
+    openMap();
+    return;
+  }
+  $('vtag').textContent = `${cfg.server || 'ASH'} · ${name === 'rules' ? 'avant de jouer' : 'raccourcis'}`;
   $('vbody').scrollTop = 0;
   if (name === 'rules') {
     $('vtitle').textContent = 'Règlement';
+    setTitle('Règles du serveur', 'Règlement');
     $('vintro').textContent = data.rulesIntro || '';
     $('vintro').style.display = data.rulesIntro ? '' : 'none';
     $('searchBox').style.display = '';
@@ -357,60 +703,930 @@ function openView(name){
     renderRules();
   } else {
     $('vtitle').textContent = 'Touches & commandes';
+    setTitle('Raccourcis', 'Touches');
     $('vintro').style.display = 'none';
     $('searchBox').style.display = 'none';
     renderKeys();
   }
-  view.classList.add('show');
-  $('escLbl').textContent = 'Retour';
+  $('pane-view').classList.add('on');
 }
 function closeView(){
   currentView = null;
   search.blur();
-  view.classList.remove('show');
+  msearch.blur(); showResults(false);
+  $('pane-view').classList.remove('on');
+  $('pane-map').classList.remove('on');
+  $('pane-overview').classList.add('on');
   document.querySelectorAll('.btn[data-view]').forEach(b => b.classList.remove('active'));
-  $('escLbl').textContent = 'Fermer';
+  setTitle('Menu pause', 'Aperçu');
+  $('escLbl').textContent = 'Reprendre';
+  if (open) notifyView('overview');
 }
 search.addEventListener('input', renderRules);
 $('vclose').addEventListener('click', closeView);
 
-/* ---------- Récompenses VIP (ash_vipdaily) ---------- */
+/* ---------- Carte NUI (Leaflet) ---------- */
+const msearch = $('msearch');
+let lmap = null, tileLayer = null, layerId = null, meMk = null, wpMk = null, blipLayer = null, dotRenderer = null;
+let mapInfo = null, results = [], resSel = 0, hiddenCats = new Set(), labels = true, showLbl = false;
+let routePane = null, routeLine = null, routePts = null, wpPos = null, routeTimers = [];
+
+const catOf = id => (data.map && data.map.categories && data.map.categories[id]) || {label:"Points d'intérêt", color:'#f5c542'};
+const fmtDist = m => m >= 1000 ? (m / 1000).toFixed(1).replace('.', ',') + ' km' : Math.round(m) + ' m';
+const latlng = (x, y) => [y, x];   // GTA (x, y) -> Leaflet [lat, lng]
+
+// Leaflet n'est téléchargé qu'à la 1re ouverture de la carte (rien au chargement du NUI)
+const LEAFLET = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min';
+// Empreintes SRI (identiques à celles publiées par cdnjs) : un fichier modifié sur le CDN est refusé
+const LEAFLET_SRI = {
+  js:  'sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==',
+  css: 'sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw==',
+};
+let leafletReady = null;
+function loadLeaflet(){
+  if (typeof L !== 'undefined') return Promise.resolve(true);
+  return leafletReady ??= new Promise(res => {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet'; css.href = LEAFLET + '.css';
+    css.integrity = LEAFLET_SRI.css; css.crossOrigin = 'anonymous'; css.referrerPolicy = 'no-referrer';
+    document.head.appendChild(css);
+    const js = document.createElement('script');
+    js.src = LEAFLET + '.js';
+    js.integrity = LEAFLET_SRI.js; js.crossOrigin = 'anonymous'; js.referrerPolicy = 'no-referrer';
+    js.onload = () => res(true);
+    js.onerror = () => { leafletReady = null; res(false); };
+    document.head.appendChild(js);
+  });
+}
+
+function initMap(){
+  const m = data.map;
+  if (typeof L === 'undefined') { $('moff').classList.add('on'); return false; }
+  const c = m.calib || {ax:0.02072, bx:117.3, ay:0.0205, by:172.8};
+  const crs = L.extend({}, L.CRS.Simple, { transformation: new L.Transformation(c.ax, c.bx, -c.ay, c.by) });
+  lmap = L.map('lmap', {crs, minZoom:1, maxZoom:5, zoomControl:false, attributionControl:false, keyboard:false,
+    maxBounds:[[-7500, -6000], [9500, 8000]], maxBoundsViscosity:.8, zoomSnap:.5});
+  lmap.setView(latlng(-200, -800), 3, {animate:false});   // centre-ville par défaut, en attendant la position
+  blipLayer = L.layerGroup().addTo(lmap);
+  dotRenderer = L.canvas({padding:.3});
+
+  // boutons de fond de carte (Atlas / Satellite / Réaliste), dans la carte plane et dans la vue réaliste
+  const lyBtns = (m.layers || []).map(l => `<button data-layer="${esc(l.id)}">${esc(l.label)}</button>`).join('')
+    + (m.realistic ? '<button data-layer="r3d">Réaliste</button>' : '');
+  $('layerBtns').innerHTML = lyBtns;
+  $('r3bar').innerHTML = lyBtns;
+  document.querySelectorAll('#layerBtns button, #r3bar button').forEach(b => b.onclick = () => {
+    if (b.dataset.layer === 'r3d') return enter3d();
+    if (R3.on) exit3d();
+    setLayer(b.dataset.layer);
+  });
+  setLayer((m.layers && m.layers[0] && m.layers[0].id) || 'atlas');
+  routePane = lmap.createPane('route');
+  routePane.style.zIndex = 390;   // sous les blips (overlayPane = 400)
+  routePane.style.pointerEvents = 'none';
+  $('legend').onclick = legendClick;
+
+  lmap.on('click', e => setWaypoint(e.latlng.lng, e.latlng.lat, true));
+  lmap.on('contextmenu', () => clearWaypoint());
+  lmap.on('zoomend', zoomClasses);
+  zoomClasses();
+  return true;
+}
+
+// Océan : une image par fond de carte (dégradé, hauts-fonds, nuages), peinte dans chaque tuile sous la terre.
+// La mer des tuiles du CDN est rendue transparente pixel par pixel : seule la terre reste, l'océan vient de l'image.
+// Part d'eau d'un pixel (0 terre, 1 eau) : atlas (b - r - 6) / 12, satellite (b - r - 30) / 30 x (b - g + 10) / 20.
+// Les mêmes formules ont servi à détourer html/cayo/*.webp.
+const OCEAN = {
+  atlas:     {img:'map/ocean_atlas.webp',     bg:'rgb(31,127,195)'},
+  satellite: {img:'map/ocean_satellite.webp', bg:'rgb(3,36,71)'},
+};
+const OCEAN_PX = {x:-27.74, y:-42.45, w:331.52, h:389.5};   // emprise des images d'océan, en pixels de carte au zoom 0
+
+// Détoure la mer d'une tuile (pixels RGBA p). Retour : 0 = tout en eau, 2 = pas d'eau, 1 = alpha écrit dans p.
+function keyTile(p, W, H, sat){
+  const n = W * H, al = new Uint8Array(n);
+  let water = 0, opaque = 0;
+  for (let i = 0, j = 0; i < n; i++, j += 4) {
+    const br = p[j + 2] - p[j];
+    let a;
+    if (sat) {
+      const w1 = (br - 30) / 30, w2 = (p[j + 2] - p[j + 1] + 10) / 20;
+      a = (w1 <= 0 || w2 <= 0) ? 255 : 255 - (w1 >= 1 ? 1 : w1) * (w2 >= 1 ? 1 : w2) * 255;
+    } else a = br <= 6 ? 255 : br >= 18 ? 0 : 255 - (br - 6) * 21.25;
+    al[i] = a;
+    if (a < 255) water++;
+    if (a) opaque++;
+  }
+  if (!water) return 2;
+  if (!opaque) return 0;
+  for (let y = 0; y < H; y++) {
+    const edgeY = y === 0 || y === H - 1;
+    for (let x = 0; x < W; x++) {
+      const i = y * W + x;
+      if (al[i] === 255) continue;
+      if (!edgeY && x && x < W - 1) {
+        // pixel bleuté isolé dans la terre (artefact JPEG sur une route) : reste opaque s'il a moins de 4 voisins en eau
+        const u = i - W, d = i + W;
+        let wn = (al[u - 1] < 255) + (al[u] < 255) + (al[u + 1] < 255) + (al[i - 1] < 255);
+        if (wn < 4) wn += (al[i + 1] < 255) + (al[d - 1] < 255) + (al[d] < 255) + (al[d + 1] < 255);
+        if (wn < 4) continue;
+      }
+      p[i * 4 + 3] = al[i];
+    }
+  }
+  return 1;
+}
+
+// Peint une tuile : fond, océan, Cayo puis terre détourée (land = canvas ou null). Sert au worker et au fil principal.
+function composeTile(ctx, ly, S, z, x, y, land){
+  const n = 2 ** z, t = 256 / n, tx = x * t, ty = y * t, k = S / t, O = ly.oceanPx, oc = ly.ocean, r = ly.cayoPx;
+  ctx.fillStyle = ly.bg;
+  ctx.fillRect(0, 0, S, S);
+  if (oc) {
+    const fx = oc.width / O.w, fy = oc.height / O.h;
+    ctx.drawImage(oc, (tx - O.x) * fx, (ty - O.y) * fy, t * fx, t * fy, 0, 0, S, S);
+  }
+  if (ly.cayo && r && r.x < tx + t && r.x + r.w > tx && r.y < ty + t && r.y + r.h > ty)
+    ctx.drawImage(ly.cayo, (r.x - tx) * k, (r.y - ty) * k, r.w * k, r.h * k);
+  if (land) ctx.drawImage(land, 0, 0, S, S);
+}
+
+// Les tuiles sont fabriquées dans un worker (téléchargement, détourage, océan, compression JPEG) puis affichées
+// comme de simples images : le fil de l'interface ne fait presque rien et le navigateur gère bien mieux des <img>
+// que des centaines de <canvas>. Sans worker (navigateur trop ancien, blocage), même travail sur le fil principal.
+const WORKER_SRC = keyTile.toString() + composeTile.toString() + `
+const layers = {};
+async function fetchBmp(urls){
+  for (const u of urls) {
+    if (!u) continue;
+    try { const r = await fetch(u); if (r.ok) return await createImageBitmap(await r.blob()); } catch (_) {}
+  }
+  return null;
+}
+self.onmessage = async ({data:m}) => {
+  if (m.type === 'layer') { layers[m.layer] = m; return; }
+  try {
+    const S = m.size;
+    let land = null, fail = false;
+    if (m.urls) {
+      const bmp = await fetchBmp(m.urls);
+      if (!bmp) fail = true;
+      else {
+        land = new OffscreenCanvas(S, S);
+        const x = land.getContext('2d', {willReadFrequently:true});
+        x.drawImage(bmp, 0, 0, S, S); bmp.close();
+        const d = x.getImageData(0, 0, S, S), r = keyTile(d.data, S, S, m.sat);
+        if (r === 0) land = null; else if (r === 1) x.putImageData(d, 0, 0);
+      }
+    }
+    const c = new OffscreenCanvas(S, S);
+    composeTile(c.getContext('2d'), layers[m.layer], S, m.z, m.x, m.y, land);
+    postMessage({id:m.id, blob:await c.convertToBlob({type:'image/jpeg', quality:.92}), fail});
+  } catch (err) { postMessage({id:m.id, blob:null, fail:true}); }
+};`;
+let tileWorker = null, jobSeq = 0;
+const jobs = new Map(), postedLayers = new Set();
+function startWorker(){
+  try {
+    if (typeof OffscreenCanvas === 'undefined' || typeof createImageBitmap === 'undefined') throw 0;
+    tileWorker = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], {type:'text/javascript'})));
+    tileWorker.onmessage = e => { const j = jobs.get(e.data.id); jobs.delete(e.data.id); if (j) j.res(e.data); };
+    tileWorker.onerror = () => {   // worker refusé : les tuiles en attente repassent sur le fil principal
+      tileWorker = false;
+      jobs.forEach(j => mainTile(j.job, j.ly).then(j.res));
+      jobs.clear();
+    };
+  } catch (e) { tileWorker = false; }
+}
+function loadImg(urls){
+  return new Promise(res => {
+    const list = urls.filter(Boolean), img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => res(img);
+    img.onerror = () => list.length ? (img.src = list.shift()) : res(null);
+    img.src = list.shift();
+  });
+}
+async function mainTile(job, ly){
+  const S = job.size, c = document.createElement('canvas');
+  c.width = c.height = S;
+  let land = null, fail = false;
+  if (job.urls) {
+    const img = await loadImg(job.urls);
+    if (!img) fail = true;
+    else {
+      land = document.createElement('canvas');
+      land.width = land.height = S;
+      const x = land.getContext('2d', {willReadFrequently:true});
+      x.drawImage(img, 0, 0, S, S);
+      try {
+        const d = x.getImageData(0, 0, S, S), r = keyTile(d.data, S, S, job.sat);
+        if (r === 0) land = null; else if (r === 1) x.putImageData(d, 0, 0);
+      } catch (e) { land = img; }   // image non lisible (CORS) : terre affichée sans détourage
+    }
+  }
+  composeTile(c.getContext('2d'), ly, S, job.z, job.x, job.y, land);
+  const blob = await new Promise(r => { try { c.toBlob(r, 'image/jpeg', .92); } catch (e) { r(null); } });
+  return {blob, fail};
+}
+function buildTile(job, ly){
+  if (tileWorker === null) startWorker();
+  if (!tileWorker) return mainTile(job, ly);
+  if (!postedLayers.has(ly.layer)) {
+    postedLayers.add(ly.layer);
+    tileWorker.postMessage({type:'layer', layer:ly.layer, bg:ly.bg, oceanPx:ly.oceanPx, cayoPx:ly.cayoPx, ocean:ly.ocean, cayo:ly.cayo});
+  }
+  return new Promise(res => { const id = ++jobSeq; jobs.set(id, {res, job, ly}); tileWorker.postMessage({id, ...job}); });
+}
+
+// Tuiles finies gardées en mémoire (JPEG, quelques dizaines de Ko) : revenir sur une zone ne refait rien
+const TILE_MAX = 400, tileCache = new Map(), tilePending = new Map();
+function getTile(o, coords){
+  const key = o.ly.layer + '/' + coords.z + '/' + coords.x + '/' + coords.y;
+  const hit = tileCache.get(key);
+  if (hit) { tileCache.delete(key); tileCache.set(key, hit); return Promise.resolve(hit); }
+  if (tilePending.has(key)) return tilePending.get(key);
+  const n = 2 ** coords.z, inWorld = coords.x >= 0 && coords.y >= 0 && coords.x < n && coords.y < n;
+  const job = {layer:o.ly.layer, size:256, z:coords.z, x:coords.x, y:coords.y, sat:o.sat,
+    urls:inWorld ? [L.Util.template(o.url, coords), o.fallback && L.Util.template(o.fallback, coords)] : null};
+  const p = o.ly.ready.then(() => buildTile(job, o.ly)).then(r => {
+    tilePending.delete(key);
+    if (inWorld) o.onLand(!r.fail);
+    if (!r.blob) return null;
+    const url = URL.createObjectURL(r.blob);
+    if (!r.fail) {   // une tuile dont la terre n'a pas chargé n'est pas gardée : elle sera retentée
+      tileCache.set(key, url);
+      if (tileCache.size > TILE_MAX) {
+        const [k, u] = tileCache.entries().next().value;
+        tileCache.delete(k);
+        URL.revokeObjectURL(u);
+      }
+    }
+    return url;
+  });
+  tilePending.set(key, p);
+  return p;
+}
+
+// images locales (océan, Cayo) décodées une seule fois en ImageBitmap (transmissibles au worker)
+const localImgs = {};
+const localImg = url => localImgs[url] ??= new Promise(res => {
+  const i = new Image();
+  i.onload = () => (typeof createImageBitmap === 'function' ? createImageBitmap(i) : Promise.reject())
+    .then(b => res(b), () => res(i));
+  i.onerror = () => res(null);
+  i.src = url;
+});
+
+// Une seule couche de tuiles (océan + Cayo + terre), affichées 4 px plus grandes et décalées de 2 px :
+// elles se chevauchent, pas de liseré entre les tuiles.
+const MapTiles = () => L.GridLayer.extend({
+  createTile(coords, done){
+    const s = this.getTileSize(), img = document.createElement('img');
+    img.alt = '';
+    img.style.width = (s.x + 4) + 'px'; img.style.height = (s.y + 4) + 'px';
+    getTile(this.options, coords).then(url => {
+      if (!url) return done(new Error('tuile'), img);
+      img.onload = () => done(null, img);
+      img.onerror = () => done(new Error('tuile'), img);
+      img.src = url;
+    });
+    return img;
+  },
+});
+let TileClass;
+const layerDefs = {};
+function setLayer(id){
+  TileClass = TileClass || MapTiles();
+  layerId = id;
+  const oc = OCEAN[id] || OCEAN.atlas, m = data.map;
+  if (tileLayer) lmap.removeLayer(tileLayer);
+  let failed = 0, loaded = 0;
+  if (!layerDefs[id]) {
+    // Cayo Perico : image posée sur sa zone GTA (mer déjà transparente dans les fichiers)
+    const cy = m.cayo, cyUrl = cy && cy.images && (cy.images[id] || cy.images.atlas);
+    let cayoPx = null;
+    if (cyUrl && cy.bounds) {
+      const b = cy.bounds, a = lmap.project(latlng(b.minX, b.maxY), 0), z = lmap.project(latlng(b.maxX, b.minY), 0);
+      cayoPx = {x:a.x, y:a.y, w:z.x - a.x, h:z.y - a.y};
+    }
+    const ly = layerDefs[id] = {layer:id, bg:oc.bg, oceanPx:OCEAN_PX, cayoPx, ocean:null, cayo:null};
+    ly.ready = Promise.all([localImg(oc.img), cyUrl ? localImg(cyUrl) : null]).then(([o, c]) => { ly.ocean = o; ly.cayo = c; });
+  }
+  // emprise de l'océan : aucune tuile hors de cette zone ; seules les tuiles du carré 256 px vont sur le CDN
+  const bounds = L.latLngBounds(lmap.unproject([OCEAN_PX.x, OCEAN_PX.y + OCEAN_PX.h], 0), lmap.unproject([OCEAN_PX.x + OCEAN_PX.w, OCEAN_PX.y], 0));
+  const fb = m.tilesFallback;
+  tileLayer = new TileClass({ly:layerDefs[id], url:m.tiles.replace('{layer}', id), fallback:fb && fb.replace('{layer}', id), sat:id === 'satellite',
+      onLand: ok => {
+        if (ok) { loaded++; $('moff').classList.remove('on'); }
+        else if (++failed > 6 && !loaded) $('moff').classList.add('on');
+      },
+      minZoom:0, maxZoom:5, maxNativeZoom:5, noWrap:true, bounds, keepBuffer:2, updateWhenZooming:false})
+    .addTo(lmap);
+  tileLayer.bringToBack();
+  $('lmap').style.background = oc.bg;
+  markLayers();
+}
+function markLayers(){
+  document.querySelectorAll('#layerBtns button, #r3bar button').forEach(b => b.classList.toggle('on', b.dataset.layer === (R3.on ? 'r3d' : layerId)));
+}
+
+function zoomClasses(){
+  const z = lmap.getZoom(), near = z >= 4, lbl = labels && z >= 3.5;
+  const nearCh = $('lmap').classList.contains('z-near') !== near;
+  $('lmap').classList.toggle('z-near', near);
+  if (!nearCh && lbl === showLbl) return;
+  showLbl = lbl;
+  blipLayer.eachLayer(l => l._blip ? l.redraw() : l.setRadius(dotRadius()));
+}
+
+const meIcon = h => L.divIcon({className:'', iconSize:[40, 40], iconAnchor:[20, 20],
+  html:`<div class="me-mk"><svg width="20" height="20" viewBox="0 0 24 24" style="transform:rotate(${-h}deg)"><path d="M12 2 20 21 12 16.5 4 21Z" fill="#fff" stroke="#6d3fe0" stroke-width="2.4" stroke-linejoin="round"/></svg></div>`});
+
+// Blips dessinés sur le canvas de la carte, étiquettes comprises : plus aucun élément HTML par blip
+// (avec un marqueur et une étiquette HTML par blip, chaque zoom recalculait la mise en page de centaines d'éléments).
+const LABEL_FONT = '700 10.5px Inter, sans-serif', measureCtx = document.createElement('canvas').getContext('2d');
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+let BlipClass;
+const BlipMark = () => L.CircleMarker.extend({
+  _blip: true,
+  _labelW(){
+    if (this._lw == null) { measureCtx.font = LABEL_FONT; this._lw = Math.ceil(measureCtx.measureText(this.options.label).width) + 14; }
+    return this._lw;
+  },
+  // zone à redessiner : le carré, plus l'étiquette au-dessus quand elle est affichée
+  _updateBounds(){
+    const p = this._point, w = showLbl && this.options.label ? this._labelW() : 0, hx = Math.max(12, w / 2 + 2);
+    this._pxBounds = new L.Bounds(p.subtract([hx, w ? 38 : 12]), p.add([hx, 14]));
+  },
+  _updatePath(){
+    if (!this._renderer._drawing || this._empty()) return;
+    const ctx = this._renderer._ctx, p = this._point, o = this.options;
+    ctx.fillStyle = 'rgba(0,0,0,.3)';
+    roundRect(ctx, p.x - 10, p.y - 8, 20, 20, 6); ctx.fill();
+    roundRect(ctx, p.x - 9, p.y - 9, 18, 18, 5);
+    ctx.fillStyle = o.fillColor; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.stroke();
+    if (showLbl && o.label) {
+      const w = this._labelW(), y = p.y - 36;
+      roundRect(ctx, p.x - w / 2, y, w, 19, 6);
+      ctx.fillStyle = 'rgba(12,7,24,.92)'; ctx.fill();
+      ctx.lineWidth = 1; ctx.strokeStyle = '#3b2a60'; ctx.stroke();
+      ctx.font = LABEL_FONT; ctx.fillStyle = '#efeaf9'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(o.label, p.x, y + 10);
+    }
+  },
+});
+const dotRadius = () => lmap.getZoom() >= 4 ? 6 : 4;
+
+function allPlaces(){
+  const list = [];
+  (mapInfo && mapInfo.blips || []).forEach(b => {
+    if (b.unknown && data.map.showUnknown === false) return;
+    list.push({x:b.x, y:b.y, z:b.z, cat:b.cat, label:b.label || catOf(b.cat).label, unknown:!!b.unknown});
+  });
+  (data.map.places || []).forEach(p => list.push({x:+p.x, y:+p.y, z:p.z != null ? +p.z : undefined, cat:p.cat || 'poi', label:p.label}));
+  return list;
+}
+
+/* ---------- Légende « Lieux » : masquer des blips ----------
+   Une catégorie entière ou un seul type de lieu (ex. « Supérette »), sur la carte plane comme sur la réaliste.
+   Mémorisé dans le navigateur du jeu (localStorage de la ressource) : rien à enregistrer côté serveur. */
+const HIDE_KEY = 'ash_pausemenu_hidden';
+let hiddenTypes = new Set(), legendOpen = new Set(), legendMin = false;
+try {
+  const s = JSON.parse(localStorage.getItem(HIDE_KEY) || '{}');
+  hiddenCats = new Set(s.cats || []); hiddenTypes = new Set(s.types || []); legendMin = !!s.min;
+} catch (e) { /* stockage indisponible : rien de masqué */ }
+function saveHidden(){
+  try { localStorage.setItem(HIDE_KEY, JSON.stringify({cats:[...hiddenCats], types:[...hiddenTypes], min:legendMin})); } catch (e) {}
+}
+const typeKey = p => p.cat + '|' + p.label;
+const isHidden = p => hiddenCats.has(p.cat) || hiddenTypes.has(typeKey(p));
+const eyeSvg = on => `<svg width="15" height="15"><use href="#i-${on ? 'eyeon' : 'eye'}"/></svg>`;
+
+let legendGroups = new Map();   // clé de type -> lieux de ce type
+function renderLegend(){
+  const order = data.map.categoryOrder || [], cats = new Map();
+  legendGroups = new Map();
+  allPlaces().forEach(p => {
+    const k = typeKey(p);
+    if (!cats.has(p.cat)) cats.set(p.cat, new Map());
+    const g = cats.get(p.cat);
+    if (!g.has(k)) g.set(k, {key:k, label:p.label, list:[]});
+    g.get(k).list.push(p);
+    if (!legendGroups.has(k)) legendGroups.set(k, g.get(k).list);
+  });
+  const ids = [...cats.keys()].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99) || a.localeCompare(b));
+  let total = 0, shown = 0, list = '';
+  ids.forEach(id => {
+    const ct = catOf(id), types = [...cats.get(id).values()].sort((a, b) => a.label.localeCompare(b.label));
+    const n = types.reduce((s, t) => s + t.list.length, 0), catOff = hiddenCats.has(id), open = legendOpen.has(id);
+    total += n;
+    list += `<div class="lg-cat${catOff ? ' off' : ''}${open ? ' open' : ''}">`
+      + `<button class="lg-name" data-open="${esc(id)}"><svg class="chev" width="11" height="11"><use href="#i-chev"/></svg>`
+      + `<i style="background:${esc(ct.color)}"></i><span>${esc(ct.label)}</span><em>${n}</em></button>`
+      + `<button class="lg-eye" data-hcat="${esc(id)}" title="${catOff ? 'Afficher' : 'Masquer'}">${eyeSvg(!catOff)}</button></div>`
+      + `<div class="lg-sub${open ? ' on' : ''}">`;
+    types.forEach(t => {
+      const off = hiddenTypes.has(t.key);
+      if (!catOff && !off) shown += t.list.length;
+      list += `<div class="lg-row${off || catOff ? ' off' : ''}"><button class="lg-name" data-go="${esc(t.key)}" title="Aller au plus proche">`
+        + `<span>${esc(t.label)}</span><em>${t.list.length}</em></button>`
+        + `<button class="lg-eye" data-htype="${esc(t.key)}" title="${off ? 'Afficher' : 'Masquer'}">${eyeSvg(!off)}</button></div>`;
+    });
+    list += '</div>';
+  });
+  const any = hiddenCats.size || hiddenTypes.size;
+  const el = $('legend');
+  el.classList.toggle('min', legendMin);
+  el.innerHTML = `<div class="lg-head"><b>Lieux</b><small>${shown} / ${total}</small><span class="sp"></span>`
+    + `<button data-all="${any ? 'show' : 'hide'}">${any ? 'Tout afficher' : 'Tout masquer'}</button>`
+    + `<button class="lg-min" data-min="1" title="Replier"><svg width="12" height="12" style="transform:rotate(90deg)"><use href="#i-chev"/></svg></button></div>`
+    + `<div class="lg-list">${list || '<div class="lg-empty">Aucun lieu sur la carte</div>'}</div>`;
+}
+
+function legendClick(e){
+  const b = e.target.closest('button');
+  if (!b) return;
+  const d = b.dataset;
+  if (d.min) { legendMin = !legendMin; saveHidden(); renderLegend(); return; }
+  if (d.open) { legendOpen.has(d.open) ? legendOpen.delete(d.open) : legendOpen.add(d.open); renderLegend(); return; }
+  if (d.go) { goNearest(legendGroups.get(d.go) || []); return; }
+  if (d.hcat) hiddenCats.has(d.hcat) ? hiddenCats.delete(d.hcat) : hiddenCats.add(d.hcat);
+  else if (d.htype) {
+    const cat = d.htype.slice(0, d.htype.indexOf('|'));
+    if (hiddenCats.has(cat)) {   // catégorie masquée : on ne réaffiche que ce type
+      hiddenCats.delete(cat);
+      legendGroups.forEach((_, k) => { if (k.startsWith(cat + '|')) hiddenTypes.add(k); });
+      hiddenTypes.delete(d.htype);
+    } else hiddenTypes.has(d.htype) ? hiddenTypes.delete(d.htype) : hiddenTypes.add(d.htype);
+  }
+  else if (d.all === 'hide') allPlaces().forEach(p => hiddenCats.add(p.cat));
+  else if (d.all === 'show') { hiddenCats.clear(); hiddenTypes.clear(); }
+  else return;
+  saveHidden();
+  renderLegend();
+  renderBlips();
+  if (R3.on) build3d();
+}
+
+// Centre la carte (plane ou réaliste) sur le lieu de la liste le plus proche du joueur
+function goNearest(list){
+  const me = mapInfo && mapInfo.me;
+  if (!list.length) return;
+  const p = me ? list.reduce((a, b) => Math.hypot(b.x - me.x, b.y - me.y) < Math.hypot(a.x - me.x, a.y - me.y) ? b : a) : list[0];
+  if (R3.on) return r3Go(p.x, p.y);
+  lmap.setView(latlng(p.x, p.y), Math.max(lmap.getZoom(), 4));
+}
+
+function renderBlips(){
+  if (!lmap) return;
+  BlipClass = BlipClass || BlipMark();
+  blipLayer.clearLayers();
+  // petits points d'abord, blips classés par-dessus
+  allPlaces().filter(p => !isHidden(p)).sort((a, b) => b.unknown - a.unknown).forEach(p => {
+    const mk = p.unknown
+      ? L.circleMarker(latlng(p.x, p.y), {renderer:dotRenderer, radius:dotRadius(), color:'rgba(0,0,0,.55)', weight:1.5, fillColor:catOf(p.cat).color, fillOpacity:.9, bubblingMouseEvents:false})
+          .bindTooltip(esc(p.label), {className:'mlb', direction:'top', offset:[0, -6]})
+      : new BlipClass(latlng(p.x, p.y), {renderer:dotRenderer, radius:10, fillColor:catOf(p.cat).color, label:p.label || '', bubblingMouseEvents:false});
+    mk.on('click', e => { L.DomEvent.stopPropagation(e); setWaypoint(p.x, p.y, true, p.label); }).addTo(blipLayer);
+  });
+}
+
+function setDest(x, y, label){
+  const me = mapInfo && mapInfo.me;
+  const d = me ? Math.hypot(x - me.x, y - me.y) : 0;
+  $('dtx').innerHTML = `Point GPS${label ? ` · <b>${esc(label)}</b>` : ''} · <b>${fmtDist(d)}</b> à vol d'oiseau`;
+  $('dest').classList.add('has');
+}
+
+function setWaypoint(x, y, send, label){
+  if (!lmap) return;
+  if (!wpMk) wpMk = L.marker(latlng(x, y), {interactive:false, zIndexOffset:900, icon: L.divIcon({className:'wp-mk', iconSize:[28, 36], iconAnchor:[14, 34],
+    html:'<svg width="28" height="36" viewBox="0 0 28 36"><path d="M14 35C6 24 2 19 2 13a12 12 0 0 1 24 0c0 6-4 11-12 22Z" fill="#8b5cf6" stroke="#fff" stroke-width="2"/><circle cx="14" cy="13" r="4.5" fill="#fff"/></svg>'})}).addTo(lmap);
+  else wpMk.setLatLng(latlng(x, y)).addTo(lmap);
+  setDest(x, y, label);
+  if (wpPos && Math.hypot(wpPos.x - x, wpPos.y - y) > 1) setRoute(null);   // l'ancien itinéraire ne vaut plus
+  wpPos = {x, y};
+  if (send) post('waypoint', {x, y}).then(refreshRoute);
+  if (R3.on) draw3d();
+}
+
+function clearWaypoint(){
+  if (wpMk) lmap.removeLayer(wpMk);
+  $('dtx').textContent = 'Clique sur la carte pour placer un point GPS';
+  $('dest').classList.remove('has');
+  wpPos = null;
+  setRoute(null);
+  post('clearWaypoint');
+}
+
+// Itinéraire GPS : GTA le calcule quelques images après le point GPS, on le redemande deux fois
+function refreshRoute(){
+  routeTimers.forEach(clearTimeout);
+  routeTimers = [500, 1600].map(ms => setTimeout(() => post('route').then(r => {
+    if (r && r.waypoint) setRoute(r.route || null);
+  }), ms));
+}
+function setRoute(pts){
+  routePts = Array.isArray(pts) && pts.length >= 6 ? pts : null;
+  if (lmap) {
+    if (routeLine) { lmap.removeLayer(routeLine); routeLine = null; }
+    if (routePts) {
+      const ll = [];
+      for (let i = 0; i + 2 < routePts.length; i += 3) ll.push(latlng(routePts[i], routePts[i + 1]));
+      routeLine = L.polyline(ll, {pane:'route', color:'#c4b0ff', weight:4.5, opacity:.95, interactive:false}).addTo(lmap);
+    }
+  }
+  if (R3.on) draw3d();
+}
+
+function centerMe(zoom){
+  if (lmap && mapInfo && mapInfo.me) lmap.setView(latlng(mapInfo.me.x, mapInfo.me.y), zoom ?? lmap.getZoom(), {animate:false});
+}
+
+function openMap(){
+  if (!lmap) {
+    loadLeaflet().then(ok => { if (ok && currentView === 'map' && initMap()) openMap(); else if (!ok) $('moff').classList.add('on'); });
+    return;
+  }
+  requestAnimationFrame(() => lmap.invalidateSize());
+  post('mapData').then(r => {
+    if (!r || !r.me) return;
+    mapInfo = r;
+    $('mStreet').textContent = r.street || '—';
+    $('mZone').textContent = r.zone || '';
+    $('mDir').textContent = r.dir || '—';
+    if (!meMk) meMk = L.marker(latlng(r.me.x, r.me.y), {interactive:false, zIndexOffset:1000, icon: meIcon(r.me.heading)}).addTo(lmap);
+    else meMk.setLatLng(latlng(r.me.x, r.me.y)).setIcon(meIcon(r.me.heading));
+    renderBlips();
+    renderLegend();
+    if (r.waypoint) { setWaypoint(r.waypoint.x, r.waypoint.y, false); setRoute(r.route); }
+    else {
+      wpPos = null; setRoute(null);
+      if (wpMk) { lmap.removeLayer(wpMk); $('dest').classList.remove('has'); $('dtx').textContent = 'Clique sur la carte pour placer un point GPS'; }
+    }
+    requestAnimationFrame(() => { lmap.invalidateSize(); centerMe(4); });
+  });
+}
+
+/* ---------- Carte réaliste ----------
+   Le Lua pose une caméra scriptée au-dessus de la ville ; la NUI garde sa pose (point visé tx/ty/tz, cap h,
+   inclinaison p, recul dist, champ fov) et place elle-même blips, point GPS et itinéraire à l'écran avec la même
+   formule que GTA. On dessine avec la dernière pose confirmée par le Lua : marqueurs et ville bougent ensemble. */
+const D2R = Math.PI / 180;
+const R3 = {on:false, busy:false, pose:null, shown:null, scale:1, marks:[], wp:null, hz:new Map(), hzMiss:new Map(),
+  sending:false, queued:false, raf:0, drag:null, hTimer:0, hPending:false};
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const WP_SVG = '<svg width="28" height="36" viewBox="0 0 28 36"><path d="M14 35C6 24 2 19 2 13a12 12 0 0 1 24 0c0 6-4 11-12 22Z" fill="#8b5cf6" stroke="#fff" stroke-width="2"/><circle cx="14" cy="13" r="4.5" fill="#fff"/></svg>';
+
+// Axes de la caméra GTA (rotation -p, 0, h) : devant, droite, haut
+function camAxes(o){
+  const h = o.h * D2R, p = o.p * D2R;
+  const fwd = [-Math.sin(h) * Math.cos(p), Math.cos(h) * Math.cos(p), -Math.sin(p)], right = [Math.cos(h), Math.sin(h), 0];
+  return {fwd, right, up:[right[1] * fwd[2] - right[2] * fwd[1], right[2] * fwd[0] - right[0] * fwd[2], right[0] * fwd[1] - right[1] * fwd[0]]};
+}
+function camView(o, W, H, scale = R3.scale){
+  const ax = camAxes(o);
+  return {...ax, W, H, pos:[o.tx - ax.fwd[0] * o.dist, o.ty - ax.fwd[1] * o.dist, o.tz - ax.fwd[2] * o.dist],
+    F:H / 2 / Math.tan(o.fov * D2R / 2) * scale};
+}
+// Point GTA -> [x écran, y écran, profondeur], null derrière la caméra
+function project(v, x, y, z){
+  const d = [x - v.pos[0], y - v.pos[1], z - v.pos[2]], f = dot3(d, v.fwd);
+  if (f < 2) return null;
+  return [v.W / 2 + dot3(d, v.right) / f * v.F, v.H / 2 - dot3(d, v.up) / f * v.F, f];
+}
+// hauteur d'un point : la sienne, sinon le sol demandé au jeu, sinon celle du point visé
+const hzKey = (x, y) => Math.round(x / 8) + ':' + Math.round(y / 8);
+const groundAt = (x, y, z) => z ?? R3.hz.get(hzKey(x, y)) ?? (R3.shown ? R3.shown.tz : 30);
+
+function build3d(){
+  const box = $('r3marks'), me = mapInfo.me;
+  box.textContent = '';
+  R3.marks = [];
+  const add = (cls, html, x, y, z, lift, label, onClick) => {
+    const el = document.createElement('div');
+    el.className = 'r3-mk' + (cls ? ' ' + cls : '');
+    el.innerHTML = html + (label ? `<span class="lb">${esc(label)}</span>` : '');
+    el.onmousedown = e => e.stopPropagation();   // un clic sur un blip ne déplace pas la caméra
+    if (onClick) el.onclick = onClick;
+    box.appendChild(el);
+    const m = {el, x, y, z, lift, dot:cls === 'dot', vis:false, lbl:true};
+    R3.marks.push(m);
+    return m;
+  };
+  allPlaces().filter(p => !isHidden(p)).sort((a, b) => b.unknown - a.unknown).forEach(p =>
+    add(p.unknown ? 'dot' : '', `<i class="sq" style="background:${esc(catOf(p.cat).color)}"></i><i class="st"></i>`,
+      p.x, p.y, p.z, 6, p.label, () => setWaypoint(p.x, p.y, true, p.label)));
+  R3.wp = add('wp', WP_SVG, 0, 0, null, 0, '', null);
+  add('me', '<i class="sq"></i>', me.x, me.y, me.z, 1.5, '', null);
+  draw3d();
+  requestHeights();
+}
+
+function draw3d(){ if (!R3.raf) R3.raf = requestAnimationFrame(render3d); }
+function render3d(){
+  R3.raf = 0;
+  if (!R3.on || !R3.shown) return;
+  const W = innerWidth, H = innerHeight, v = camView(R3.shown, W, H);
+  for (const m of R3.marks) {
+    let x = m.x, y = m.y, z = m.z;
+    if (m === R3.wp) { if (wpPos) { x = wpPos.x; y = wpPos.y; z = wpPos.z; } else x = null; }
+    const s = x == null ? null : project(v, x, y, groundAt(x, y, z) + m.lift);
+    if (!s || s[0] < -80 || s[0] > W + 80 || s[1] < -80 || s[1] > H + 80) {
+      if (m.vis) { m.el.style.display = 'none'; m.vis = false; }
+      continue;
+    }
+    if (!m.vis) { m.el.style.display = 'block'; m.vis = true; }
+    const k = clamp(1.3 - s[2] / 3400, .62, 1.15);
+    m.el.style.transform = `translate3d(${s[0].toFixed(1)}px,${s[1].toFixed(1)}px,0) scale(${k.toFixed(3)})`;
+    m.el.style.zIndex = String(100000 - Math.round(s[2]));
+    const lbl = labels && !m.dot && s[2] < 2600;   // étiquettes des blips proches seulement
+    if (lbl !== m.lbl) { m.el.classList.toggle('nl', !lbl); m.lbl = lbl; }
+  }
+  let d = '', pen = false;
+  if (routePts && wpPos) for (let i = 0; i + 2 < routePts.length; i += 3) {
+    const s = project(v, routePts[i], routePts[i + 1], routePts[i + 2] + 1.5);
+    if (!s) { pen = false; continue; }
+    d += (pen ? 'L' : 'M') + s[0].toFixed(1) + ' ' + s[1].toFixed(1);
+    pen = true;
+  }
+  $('r3gl').setAttribute('d', d);
+  $('r3ln').setAttribute('d', d);
+}
+
+// Envoie la pose voulue au Lua, une requête à la fois (la dernière pose gagne)
+function send3d(){
+  if (R3.sending) { R3.queued = true; return; }
+  R3.sending = true;
+  const p = {...R3.pose};
+  post('cam3d', p).then(r => {
+    R3.sending = false;
+    if (!R3.on) return;
+    if (r && r.ok) {
+      R3.shown = p;
+      // suit le relief sous le point visé, en douceur
+      if (typeof r.gz === 'number' && Math.abs(r.gz - R3.pose.tz) > .5) { R3.pose.tz += (r.gz - R3.pose.tz) * .5; R3.queued = true; }
+      if (r.zone) $('r3zone').textContent = r.zone;
+      draw3d();
+    }
+    if (R3.queued) { R3.queued = false; send3d(); }
+    else { clearTimeout(R3.hTimer); R3.hTimer = setTimeout(requestHeights, 500); }
+  });
+}
+
+// Sol sous les blips sans hauteur. Le jeu ne le connaît que près du point visé (collisions chargées) :
+// on ne demande que dans ce rayon, et un point raté n'est redemandé qu'une fois la caméra partie ailleurs.
+const HZ_RADIUS = 700, HZ_RETRY = 250, HZ_BATCH = 80;
+function requestHeights(){
+  if (!R3.on || R3.hPending) return;
+  const t = R3.pose, seen = new Set(), pts = [];
+  const want = (x, y, z) => {
+    const k = hzKey(x, y), miss = R3.hzMiss.get(k);
+    if (z != null || R3.hz.has(k) || seen.has(k) || Math.hypot(x - t.tx, y - t.ty) > HZ_RADIUS) return;
+    if (miss && Math.hypot(miss[0] - t.tx, miss[1] - t.ty) < HZ_RETRY) return;
+    seen.add(k);
+    pts.push([x, y]);
+  };
+  R3.marks.forEach(m => m !== R3.wp && want(m.x, m.y, m.z));
+  if (wpPos) want(wpPos.x, wpPos.y, wpPos.z);
+  if (!pts.length) return;
+  // les plus proches du point visé d'abord : ce sont ceux que le jeu a le plus de chances de connaître
+  pts.sort((a, b) => Math.hypot(a[0] - t.tx, a[1] - t.ty) - Math.hypot(b[0] - t.tx, b[1] - t.ty));
+  const batch = pts.slice(0, HZ_BATCH), at = [t.tx, t.ty];
+  R3.hPending = true;
+  post('heights', {pts:batch}).then(r => {
+    R3.hPending = false;
+    if (!Array.isArray(r)) return;
+    batch.forEach((p, i) => {
+      const k = hzKey(p[0], p[1]);
+      if (typeof r[i] === 'number') { R3.hz.set(k, r[i]); R3.hzMiss.delete(k); }
+      else R3.hzMiss.set(k, at);
+    });
+    draw3d();
+    if (pts.length > HZ_BATCH) R3.hTimer = setTimeout(requestHeights, 100);   // la suite, sans bloquer le jeu
+  });
+}
+
+// Étalonnage envoyé par le Lua : écart réel à l'écran d'un point connu -> échelle de la projection
+function cal3d(m){
+  if (!R3.on || !m.pose) return;
+  const o = {...m.pose, fov:R3.pose.fov}, v = camView(o, innerWidth, innerHeight, 1);
+  const s = project(v, o.tx + v.right[0] * m.off, o.ty + v.right[1] * m.off, o.tz);
+  if (!s) return;
+  const pred = s[0] - v.W / 2, real = (m.sx - .5) * v.W;
+  if (pred > 4 && real > 4) { R3.scale = clamp(real / pred, .4, 2.5); draw3d(); }
+}
+
+const curtain = on => $('curtain').classList.toggle('on', on);
+function enter3d(){
+  if (R3.on || R3.busy || !data.map.realistic || !mapInfo || !mapInfo.me) return;
+  R3.busy = true;
+  curtain(true);
+  setTimeout(() => {
+    const me = mapInfo.me, rc = data.map.realistic;
+    R3.pose = {tx:me.x, ty:me.y, tz:me.z ?? 30, h:0, p:rc.pitch || 56, dist:rc.distance || 850, fov:rc.fov || 45};
+    post('map3d', {active:true, pose:R3.pose}).then(r => {
+      if (!open || !r || !r.ok) { R3.busy = false; curtain(false); return; }
+      R3.pose.fov = r.fov || R3.pose.fov;
+      R3.shown = {...R3.pose};
+      R3.scale = 1;
+      R3.on = true;
+      document.body.classList.add('r3d');
+      $('r3srv').textContent = cfg.server || 'ASH';
+      $('r3zone').textContent = mapInfo.zone || 'Los Santos';
+      $('r3d').appendChild($('legend'));
+      markLayers();
+      build3d();
+      setTimeout(() => { curtain(false); R3.busy = false; }, 250);   // laisse la ville s'afficher sous le noir
+    });
+  }, 260);
+}
+function exit3d(){
+  if (!R3.on || R3.busy) return;
+  R3.busy = true;
+  curtain(true);
+  setTimeout(() => {
+    post('map3d', {active:false});
+    reset3d();
+    setTimeout(() => { curtain(false); R3.busy = false; }, 150);
+  }, 260);
+}
+// Retour à la carte plane côté NUI seulement (aussi quand le menu se ferme : le Lua a déjà rendu la caméra)
+function reset3d(){
+  R3.on = false;
+  R3.drag = null;
+  clearTimeout(R3.hTimer);
+  R3.hzMiss.clear();   // la ville aura bougé d'ici la prochaine ouverture : on retentera ces points
+  document.body.classList.remove('r3d');
+  $('r3d').classList.remove('drag', 'turn');
+  $('pane-map').insertBefore($('legend'), $('dest'));
+  $('r3marks').textContent = '';
+  R3.marks = [];
+  markLayers();
+  if (lmap) requestAnimationFrame(() => lmap.invalidateSize());
+}
+function r3Go(x, y){ R3.pose.tx = x; R3.pose.ty = y; send3d(); }
+function zoom3d(n){
+  const rc = data.map.realistic || {};
+  R3.pose.dist = clamp(R3.pose.dist * .8 ** n, rc.minDistance || 90, rc.maxDistance || 3200);
+  send3d();
+}
+
+// Souris : glisser = déplacer, clic droit glissé = tourner / incliner, clic = point GPS, molette = zoom
+const r3el = $('r3d');
+r3el.addEventListener('mousedown', e => {
+  if (!R3.on || R3.busy || (e.button !== 0 && e.button !== 2) || e.target.closest('.mtool')) return;
+  R3.drag = {b:e.button, x:e.clientX, y:e.clientY, moved:0};
+  r3el.classList.add(e.button === 2 ? 'turn' : 'drag');
+});
+window.addEventListener('mousemove', e => {
+  const g = R3.drag;
+  if (!g) return;
+  const dx = e.clientX - g.x, dy = e.clientY - g.y, o = R3.pose;
+  g.x = e.clientX; g.y = e.clientY; g.moved += Math.abs(dx) + Math.abs(dy);
+  if (g.b === 2) {
+    o.h = (o.h - dx * .22 + 360) % 360;
+    o.p = clamp(o.p + dy * .18, 25, 89);
+  } else {
+    // mètres par pixel au point visé ; en vue penchée le sol fuit, on avance plus vite en profondeur
+    const R = 2 * o.dist * Math.tan(o.fov * D2R / 2) / innerHeight / R3.scale, U = 1 / Math.max(.45, Math.sin(o.p * D2R)), h = o.h * D2R;
+    o.tx = clamp(o.tx - Math.cos(h) * dx * R - Math.sin(h) * dy * R * U, -4500, 6500);
+    o.ty = clamp(o.ty - Math.sin(h) * dx * R + Math.cos(h) * dy * R * U, -7000, 8500);
+  }
+  send3d();
+});
+window.addEventListener('mouseup', e => {
+  const g = R3.drag;
+  if (!g) return;
+  R3.drag = null;
+  r3el.classList.remove('drag', 'turn');
+  if (g.b !== 0 || g.moved > 5 || !R3.shown) return;
+  // rayon sous le curseur, lancé par le Lua dans la vraie ville
+  const v = camView(R3.shown, innerWidth, innerHeight), a = (e.clientX - v.W / 2) / v.F, b = (v.H / 2 - e.clientY) / v.F;
+  const dir = [0, 1, 2].map(i => v.fwd[i] + v.right[i] * a + v.up[i] * b);
+  post('pick3d', {dx:dir[0], dy:dir[1], dz:dir[2]}).then(r => {
+    if (!r || !r.ok) return;
+    setWaypoint(r.x, r.y, false);
+    wpPos.z = r.z;
+    refreshRoute();
+  });
+});
+r3el.addEventListener('wheel', e => { if (R3.on && !e.target.closest('.mtool')) zoom3d(e.deltaY < 0 ? 1 : -1); }, {passive:true});
+r3el.addEventListener('contextmenu', e => e.preventDefault());
+window.addEventListener('resize', () => R3.on && draw3d());
+$('r3back').onclick = exit3d;
+$('r3in').onclick = () => zoom3d(1);
+$('r3out').onclick = () => zoom3d(-1);
+$('r3me').onclick = () => mapInfo && mapInfo.me && r3Go(mapInfo.me.x, mapInfo.me.y);
+
+/* recherche */
+function showResults(on){ $('mres').classList.toggle('on', !!on && results.length > 0); }
+function renderResults(){
+  const q = norm(msearch.value.trim());
+  if (!q) { results = []; showResults(false); return; }
+  const me = mapInfo && mapInfo.me;
+  results = allPlaces().filter(p => !p.unknown).filter(p => norm(p.label).includes(q) || norm(catOf(p.cat).label).includes(q))
+    .map(p => ({...p, d: me ? Math.hypot(p.x - me.x, p.y - me.y) : 0}))
+    .sort((a, b) => a.d - b.d).slice(0, 30);
+  resSel = 0;
+  $('mres').innerHTML = results.length ? results.map((p, i) =>
+    `<button data-i="${i}" class="${i === 0 ? 'sel' : ''}"><i style="background:${esc(catOf(p.cat).color)}"></i>${esc(p.label)}<small>${fmtDist(p.d)}</small></button>`).join('')
+    : '';
+  document.querySelectorAll('#mres button').forEach(b => b.onmousedown = e => { e.preventDefault(); pickResult(+b.dataset.i); });
+  showResults(true);
+}
+function moveResult(dir){
+  if (!results.length) return;
+  resSel = (resSel + dir + results.length) % results.length;
+  document.querySelectorAll('#mres button').forEach((b, i) => b.classList.toggle('sel', i === resSel));
+  document.querySelectorAll('#mres button')[resSel].scrollIntoView({block:'nearest'});
+}
+function pickResult(i){
+  const p = results[i];
+  if (!p) return;
+  lmap.setView(latlng(p.x, p.y), Math.max(lmap.getZoom(), 4));
+  setWaypoint(p.x, p.y, true, p.label);
+  msearch.value = ''; results = []; showResults(false); msearch.blur();
+}
+msearch.addEventListener('input', renderResults);
+msearch.addEventListener('blur', () => setTimeout(() => showResults(false), 100));
+msearch.addEventListener('focus', () => showResults(true));
+
+$('zin').onclick = () => lmap && lmap.zoomIn();
+$('zout').onclick = () => lmap && lmap.zoomOut();
+$('zme').onclick = () => centerMe(Math.max(lmap ? lmap.getZoom() : 4, 4));
+$('dclr').onclick = clearWaypoint;
+$('btnNative').onclick = $('moffNative').onclick = () => post('map');
+$('btnLabels').onclick = () => {
+  labels = !labels;
+  $('btnLabels').classList.toggle('on', labels);
+  if (lmap) zoomClasses();
+  if (R3.on) draw3d();
+};
+
+/* ---------- Récompenses VIP (ash_vipdaily) : état du jour ; un clic place le GPS sur le PNJ où la récompense se récupère ---------- */
 function setVipDaily(e){
-  const el = $('vdState');
-  el.className = 'vstate';
-  if (!e) { el.textContent = '…'; return; }
-  if (!e.vip) { el.textContent = 'Réservé aux VIP'; return; }
-  if (e.disponible) { el.classList.add('ok'); el.textContent = 'Disponible'; return; }
+  const card = $('kVip');
+  card.classList.remove('ok');
+  if (!e) { $('kVipState').textContent = '…'; $('kVipSub').textContent = 'Chargement'; return; }
+  if (!e.vip) { $('kVipState').textContent = 'Réservé aux VIP'; $('kVipSub').textContent = 'Disponible via la boutique'; return; }
+  if (e.disponible) {
+    card.classList.add('ok'); $('kVipState').textContent = 'Disponible';
+    $('kVipSub').textContent = `Série de ${e.serie || 0} jour${(e.serie || 0) > 1 ? 's' : ''}`;
+    return;
+  }
   const h = Math.floor((e.secondes || 0) / 3600), m = Math.floor(((e.secondes || 0) % 3600) / 60);
-  el.classList.add('gold');
-  el.textContent = `Série ${e.serie || 0} j · ${h}h${String(m).padStart(2, '0')}`;
+  $('kVipState').textContent = `Dans ${h}h${pad2(m)}`;
+  $('kVipSub').textContent = `Série de ${e.serie || 0} j · déjà récupérée`;
 }
 
 /* ---------- Ouverture / fermeture ---------- */
 function show(msg){
   cfg = msg.config || cfg;
-  if (msg.static) data = msg.static;
+  if (msg.static) {
+    data = msg.static;
+    // carte NUI activée : le bouton Carte devient une vue du menu (surlignée comme Règlement / Touches)
+    if (data.map) document.querySelector('.btn[data-action="map"]').dataset.view = 'map';
+  }
   player = msg.player || {};
   streamer = !!msg.streamer;
-  $('srv').textContent = cfg.server || 'ASH';
+  $('srv').textContent = $('crumbSrv').textContent = cfg.server || 'ASH';
   $('subtitle').textContent = cfg.subtitle || '';
-  $('btnDiscord').style.display = cfg.discord ? '' : 'none';
-  $('btnShop').style.display = cfg.shop ? '' : 'none';
-  $('btnReport').style.display = cfg.report ? '' : 'none';
-  $('btnVipDaily').style.display = cfg.vipdaily ? '' : 'none';
+  $('quitTitle').textContent = `Quitter ${cfg.server || 'ASH'} ?`;
+  $('btnDiscord').style.display = $('qaDiscord').style.display = cfg.discord ? '' : 'none';
+  $('btnShop').style.display = $('qaShop').style.display = cfg.shop ? '' : 'none';
+  $('btnReport').style.display = $('qaReport').style.display = cfg.report ? '' : 'none';
+  $('kVip').style.display = cfg.vipdaily ? '' : 'none';
   setVipDaily(null);
   renumber();
   renderPlayer();
   $('players').textContent = '—';
   sessionSec = (msg.session || 0) - 1; tick();
+  const since = new Date(Date.now() - (msg.session || 0) * 1000);
+  $('kSince').textContent = `Connecté depuis ${pad2(since.getHours())}:${pad2(since.getMinutes())}`;
   clearInterval(ticker); ticker = setInterval(tick, 1000);
   busy = false; closeModal(); closeView();
   select(0);
   open = true;
   app.classList.add('show');
+  notifyView('overview');
 }
 function hide(){
   open = false;
+  if (R3.on) reset3d();
+  R3.busy = false;
+  curtain(false);
   app.classList.remove('show');
   busy = false; closeModal(); closeView();
   clearInterval(ticker);
@@ -419,7 +1635,7 @@ function hide(){
 function run(action){
   switch(action){
     case 'resume':   post('close'); break;
-    case 'map':      post('map'); break;
+    case 'map':      if (data.map) openView('map'); else post('map'); break;
     case 'settings': post('settings'); break;
     case 'rules':
     case 'keys':     openView(action); break;
@@ -430,7 +1646,6 @@ function run(action){
       });
       break;
     case 'report':   post('report'); break;
-    case 'vipdaily': post('vipdaily'); break;
     case 'discord':  if (cfg.discord && window.invokeNative) window.invokeNative('openUrl', cfg.discord); break;
     case 'shop':     if (cfg.shop && window.invokeNative) window.invokeNative('openUrl', cfg.shop); break;
     case 'quit':     openModal(); break;
@@ -486,20 +1701,40 @@ document.querySelectorAll('.btn').forEach(b => {
   b.addEventListener('mouseenter', () => { sel = buttons().indexOf(b); buttons().forEach(x => x.classList.toggle('sel', x === b)); });
   b.addEventListener('click', () => run(b.dataset.action));
 });
+document.querySelectorAll('.qa').forEach(b => b.addEventListener('click', () => run(b.dataset.run)));
+$('kVip').addEventListener('click', () => {
+  post('vipgps').then((r) => {
+    $('kVipSub').textContent = r && r.ok ? 'Point GPS placé sur le PNJ' : 'PNJ indisponible';
+  });
+});
+$('resumeBig').addEventListener('click', () => run('resume'));
 
 /* ---------- Clavier ---------- */
 window.addEventListener('keydown', e => {
   if (!open) return;
+  if (R3.on || R3.busy) {   // vue réaliste : ÉCHAP (ou Retour arrière) revient à la carte plane
+    if (e.key === 'Escape' || e.key === 'Backspace') { e.preventDefault(); exit3d(); }
+    return;
+  }
   const typing = document.activeElement === search;
+  const typingMap = document.activeElement === msearch;
 
   if (e.key === 'Escape') {
     if (modalOpen()) closeModal();
     else if (typing && search.value) { search.value = ''; renderRules(); }
+    else if (typingMap && msearch.value) { msearch.value = ''; renderResults(); }
+    else if (typingMap) msearch.blur();
     else if (currentView) closeView();
     else post('close');
     return;
   }
   if (modalOpen()) { if (e.key === 'Enter' && !e.repeat) startHold(); return; }
+  if (typingMap) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); moveResult(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); moveResult(-1); }
+    else if (e.key === 'Enter') pickResult(resSel);
+    return;
+  }
   if (typing) { if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') search.blur(); else return; }
 
   if (e.key === 'ArrowDown') { e.preventDefault(); select(sel + 1); }
@@ -511,6 +1746,12 @@ window.addEventListener('keydown', e => {
     search.focus();
     search.value += e.key;
     renderRules();
+  }
+  else if (currentView === 'map' && (/^[a-zà-ÿ]$/i.test(e.key) || e.key === '/') && !e.ctrlKey && !e.altKey) {
+    // taper = rechercher un lieu sur la carte
+    e.preventDefault();
+    msearch.focus();
+    if (e.key !== '/') { msearch.value += e.key; renderResults(); }
   }
   else if (/^[0-9]$/.test(e.key)) {
     const b = buttons()[e.key === '0' ? 9 : +e.key - 1];
@@ -524,8 +1765,10 @@ window.addEventListener('message', ({data: m}) => {
   if (!m || !m.action) return;
   if (m.action === 'open') show(m);
   else if (m.action === 'close') hide();
-  else if (m.action === 'stats') $('players').textContent = `${m.players}/${m.max}`;
+  else if (m.action === 'stats') $('players').textContent = `${m.players} / ${m.max}`;
   else if (m.action === 'vipdaily') setVipDaily(m.etat);
+  else if (m.action === 'headshot') setHeadshot(m.txd);
+  else if (m.action === 'cal3d') cal3d(m);
 });
 </script>
 </body>

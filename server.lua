@@ -29,8 +29,11 @@ lib.callback.register('ash_pausemenu:quit', function(src)
     end
     lastQuitTry[src] = now
 
+    -- personnage pas chargé (sélection de perso, spawn) : rien à quitter via ce menu
+    local xPlayer = QBCore.Functions.GetPlayer(src)
+    if not xPlayer then return false, Config.Locale.wait end
+
     if Config.BlockQuitWhenRestrained then
-        local xPlayer = QBCore.Functions.GetPlayer(src)
         local md      = xPlayer and xPlayer.PlayerData.metadata or {}
         local state   = Player(src).state
 

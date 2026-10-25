@@ -5,7 +5,7 @@ lua54 'yes'
 name 'ash_pausemenu'
 author 'ASH City'
 description 'Menu pause ASH City (remplace ÉCHAP) avec bouton pour quitter la session'
-version '1.3.0'
+version '1.11.5'
 
 shared_scripts {
     '@ox_lib/init.lua',
@@ -19,6 +19,8 @@ ui_page 'html/index.html'
 
 files {
     'html/index.html',
+    'html/cayo/*.webp',
+    'html/map/*.webp',
 }
 
 dependencies {

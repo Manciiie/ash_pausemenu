@@ -32,6 +32,138 @@ Config.BlockQuitWhenRestrained = true
 Config.QuitMessage = 'Tu as quitté ASH City. Ton personnage a été sauvegardé. À bientôt !'
 
 ------------------------------------------------------------------------
+-- Aperçu : prévisualisation du personnage
+-- Une caméra filme ton perso à droite de l'écran tant que l'onglet Aperçu est
+-- affiché (pas de flou à ce moment-là). Impossible en véhicule, à terre ou
+-- collé à un mur : le menu affiche alors le portrait du perso à la place.
+--   Distance : recul de la caméra (m)    Height : hauteur de la caméra / bassin (m)
+--   Shift    : décalage vers la droite de l'écran (m, plus grand = plus à droite)
+--   Fov      : champ de vision (plus petit = perso plus grand)
+------------------------------------------------------------------------
+Config.Preview = {
+    Enabled      = true,
+    Distance     = 2.6,
+    Height       = 0.15,
+    AimHeight    = -0.05,
+    Shift        = 1.0,
+    Fov          = 42.0,
+    LookAtCamera = true,   -- le perso tourne la tête vers la caméra
+}
+
+------------------------------------------------------------------------
+-- Cayo Perico sur la carte GTA native (menu pause GTA / bouton "Carte GTA")
+-- et sur la minimap quand on est près de l'île.
+--   Minimap  : false = la minimap reste celle de Los Santos même sur l'île
+--   Distance : rayon (m) autour de l'île où la minimap passe sur Cayo
+-- Ne charge pas l'île elle-même (IPL) : ça reste le rôle de ta ressource Cayo.
+------------------------------------------------------------------------
+Config.CayoNative = {
+    Enabled  = true,
+    Minimap  = true,
+    Distance = 2200.0,
+}
+
+------------------------------------------------------------------------
+-- Carte NUI (touche 2 / bouton Carte)
+-- Carte de Los Santos dans le menu : ta position, les blips visibles sur ta
+-- carte GTA, recherche, clic = point GPS, clic droit = effacer le point.
+-- Enabled = false : le bouton Carte rouvre la carte GTA native comme avant.
+-- Les images viennent du dépôt GitHub meesvrh/GTAV-Map-Tiles (GitHub Pages, secours jsDelivr) :
+-- rien à télécharger pour les joueurs, mais il faut internet côté client.
+-- jsDelivr seul ne suffit pas : le dépôt dépasse sa limite de 50 Mo et certaines tuiles
+-- non encore en cache sont refusées (carré vide sur la carte).
+------------------------------------------------------------------------
+Config.Map = {
+    Enabled = true,
+    Tiles         = 'https://meesvrh.github.io/GTAV-Map-Tiles/tiles/{layer}/{z}/{x}/{y}.jpg',
+    TilesFallback = 'https://cdn.jsdelivr.net/gh/meesvrh/GTAV-Map-Tiles@main/tiles/{layer}/{z}/{x}/{y}.jpg',
+    Layers  = {
+        { id = 'atlas',     label = 'Atlas' },
+        { id = 'satellite', label = 'Satellite' },
+    },
+    -- Calage coordonnées GTA -> image (vérifié sur LSIA, Sandy Shores, Zancudo, Paleto)
+    Calibration = { ax = 0.02072, bx = 117.3, ay = 0.0205, by = 172.8 },
+
+    -- Cayo Perico : image posée par-dessus la carte (images 1920 px de GTABase, mer rendue transparente pour laisser
+    -- voir l'océan de html/map/, en WebP dans html/cayo/).
+    -- Bounds = zone GTA couverte par l'image, calée sur l'aérodrome (4494, -4525) et la villa d'El Rubio (5010, -5753).
+    -- Si l'île paraît décalée en jeu, ajuste ces 4 valeurs (en mètres GTA).
+    Cayo = {
+        Enabled = true,
+        Bounds  = { minX = 3592.5, maxX = 5870.0, minY = -6304.0, maxY = -4027.0 },
+        Images  = { atlas = 'cayo/atlas.webp', satellite = 'cayo/satellite.webp' },
+    },
+
+    -- Ordre d'affichage des catégories dans la légende
+    CategoryOrder = { 'public', 'sante', 'shop', 'garage', 'job', 'poi' },
+    -- Blips non listés dans Sprites : petits points tant qu'on n'a pas zoomé (false = masqués)
+    ShowUnknown = true,
+
+    -- Blips repris de la carte GTA : seuls les blips fixes (pas ceux des joueurs / véhicules).
+    -- Nom et catégorie par numéro de sprite (https://docs.fivem.net/docs/game-references/blips/).
+    -- Un sprite absent de la liste s'affiche en « Point d'intérêt ».
+    Categories = {
+        public  = { label = 'Services publics', color = '#4f8cff' },
+        sante   = { label = 'Santé',            color = '#ff5d8f' },
+        shop    = { label = 'Commerces',        color = '#ff9a3c' },
+        garage  = { label = 'Garages',          color = '#22c55e' },
+        job     = { label = 'Métiers',          color = '#b49cff' },
+        poi     = { label = "Points d'intérêt", color = '#f5c542' },
+    },
+    Sprites = {
+        [60]  = { 'Commissariat', 'public' },       -- radar_police_station
+        [137] = { 'Commissariat', 'public' },       -- radar_police_station_blue
+        [61]  = { 'Hôpital', 'sante' },             -- radar_hospital
+        [108] = { 'Banque', 'public' },             -- radar_financier_strand
+        [207] = { 'Banque', 'public' },             -- radar_financier_strand_grey
+        [52]  = { 'Supérette', 'shop' },            -- radar_crim_holdups
+        [361] = { 'Station-service', 'shop' },      -- radar_jerry_can
+        [73]  = { 'Vêtements', 'shop' },            -- radar_clothes_store
+        [71]  = { 'Coiffeur', 'shop' },             -- radar_barber
+        [75]  = { 'Tatoueur', 'shop' },             -- radar_tattoo
+        [110] = { 'Ammu-Nation', 'shop' },          -- radar_gun_shop
+        [93]  = { 'Bar', 'shop' },                  -- radar_bar
+        [831] = { 'Concession', 'shop' },           -- radar_car_showroom
+        [830] = { 'Concession de luxe', 'shop' },   -- radar_luxury_car_showroom
+        [357] = { 'Garage', 'garage' },             -- radar_garage
+        [856] = { 'Parking', 'garage' },            -- radar_multistorey_garage
+        [446] = { 'Mécanicien', 'garage' },         -- radar_bennys
+        [72]  = { 'Mécanicien', 'garage' },         -- radar_car_mod_shop
+        [402] = { 'Réparation', 'garage' },         -- radar_repair
+        [100] = { 'Lavage', 'garage' },             -- radar_car_wash
+        [68]  = { 'Fourrière', 'garage' },          -- radar_tow_truck
+        [198] = { 'Taxi', 'job' },                  -- radar_taxi
+        [318] = { 'Éboueur', 'job' },               -- radar_garbage
+        [477] = { 'Camionneur', 'job' },            -- radar_truck
+        [513] = { 'Bus', 'job' },                   -- radar_bus
+        [40]  = { 'Maison', 'poi' },                -- radar_safehouse
+        [350] = { 'Propriété à vendre', 'poi' },    -- radar_property_for_sale
+        [374] = { 'Entreprise', 'poi' },            -- radar_business
+        [138] = { 'Aéroport', 'poi' },              -- radar_airport
+        [360] = { 'Héliport', 'poi' },              -- radar_helipad
+    },
+    -- Lieux en plus dans la recherche (sans blip). Ex : { label = 'Mairie', x = -544.9, y = -204.2, cat = 'public' }
+    Places = {},
+
+    -- Onglet « Réaliste » : la caméra monte au-dessus de la vraie ville, on la déplace à la souris
+    -- (glisser = déplacer, clic droit glissé = tourner / incliner, molette = zoom, clic = point GPS),
+    -- avec les blips, le point GPS et l'itinéraire dessinés sur les bâtiments.
+    Realistic = {
+        Enabled     = true,
+        Fov         = 45.0,    -- champ de vision de la caméra (degrés)
+        Distance    = 850.0,   -- recul de départ (mètres)
+        Pitch       = 56.0,    -- inclinaison de départ (90 = vue du dessus)
+        MinDistance = 90.0,
+        MaxDistance = 3200.0,
+        -- HUD d'autres ressources cachés pendant la vue puis réaffichés : [ressource] = export qui prend true / false
+        -- (jg-hud : exports['jg-hud']:toggleHud(show), docs.jgscripts.com/hud/exports). Ressource arrêtée = ignorée.
+        HideHuds = {
+            ['jg-hud'] = 'toggleHud',
+        },
+    },
+}
+
+------------------------------------------------------------------------
 -- Signaler (menu report de Luxu Admin)
 -- Luxu n'expose pas d'export pour ouvrir les reports : on exécute sa commande.
 -- Mets le nom de la commande SANS le "/" (celle que tes joueurs tapent en jeu).
@@ -41,14 +173,13 @@ Config.ReportCommand = 'report'
 
 ------------------------------------------------------------------------
 -- Récompenses VIP quotidiennes (ressource ash_vipdaily)
--- Le bouton n'apparaît que si la ressource est démarrée. Il affiche l'état du
--- jour (disponible / déjà récupérée / réservé aux VIP) puis ouvre son interface.
--- Commande = celle de Config.Commande dans ash_vipdaily (sans le "/").
--- Ressource = '' pour masquer le bouton.
+-- Carte « Récompense VIP » dans l'Aperçu : disponible, temps avant la prochaine, série,
+-- ou réservé aux VIP. Un clic place le point GPS sur le PNJ d'ash_vipdaily (v1.4.1 ou plus),
+-- où la récompense se récupère. N'apparaît que si la ressource est démarrée.
+-- Ressource = '' pour masquer la carte.
 ------------------------------------------------------------------------
 Config.VipDaily = {
     Ressource = 'ash_vipdaily',
-    Commande  = 'recompenses',
     Cache     = 30,   -- secondes pendant lesquelles l'état est réutilisé entre deux ouvertures du menu
 }
 
