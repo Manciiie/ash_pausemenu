@@ -258,6 +258,11 @@ local function openMenu()
                     minDistance = (m.Realistic or {}).MinDistance, maxDistance = (m.Realistic or {}).MaxDistance,
                 } or nil,
                 cayo = m.Cayo and m.Cayo.Enabled and { bounds = m.Cayo.Bounds, images = m.Cayo.Images } or nil,
+                islands = (function()
+                    local list = {}
+                    for _, isl in ipairs(m.Islands or {}) do list[#list + 1] = { bounds = isl.Bounds, images = isl.Images } end
+                    return #list > 0 and list or nil
+                end)(),
                 postals = m.Postals and m.Postals.Enabled ~= false and { file = m.Postals.File, minZoom = m.Postals.MinZoom } or nil,
             } or nil,
         }
@@ -449,19 +454,46 @@ end
 local DIRS = { 'N', 'NO', 'O', 'SO', 'S', 'SE', 'E', 'NE' }
 local function r10(v) return math.floor(v * 10 + 0.5) / 10 end
 
--- Itinéraire GPS vers le point GPS, en points {x, y, z, x, y, z, ...} (une centaine au plus)
-local function gpsRoute()
-    if not IsWaypointActive() then return nil end
+-- Itinéraire GPS en points {x, y, z, x, y, z, ...} (une centaine au plus).
+-- slot : 0 = vers le point GPS, 1 = route d'un blip (SetBlipRoute : taxi, missions, jobs…)
+local function routePoints(slot)
     local len = GetGpsBlipRouteLength()
     local step = len and len > 0 and math.max(15.0, len / 150) or 40.0
     local pts, last, d = {}, nil, 0.0
     for _ = 1, 200 do
-        local ok, p = GetPosAlongGpsTypeRoute(true, d, 0)
+        local ok, p = GetPosAlongGpsTypeRoute(true, d, slot)
         if not ok or (last and #(p - last) < 1.0) then break end   -- fin de l'itinéraire
         pts[#pts + 1], pts[#pts + 2], pts[#pts + 3] = r10(p.x), r10(p.y), r10(p.z)
         last, d = p, d + step
     end
     return #pts >= 6 and pts or nil
+end
+
+local function gpsRoute()
+    if not IsWaypointActive() then return nil end
+    return routePoints(0)
+end
+
+-- Route posée par un script sur un blip : tracé + couleur du blip qui la porte (cherché seulement s'il y a une route)
+local function blipRoute()
+    local pts = routePoints(1)
+    if not pts then return nil end
+    local color
+    for sprite = 1, SPRITE_MAX do
+        if sprite ~= 8 then
+            local blip = GetFirstBlipInfoId(sprite)
+            while DoesBlipExist(blip) do
+                if DoesBlipHaveGpsRoute(blip) then
+                    local r, g, b = GetHudColour(GetBlipHudColour(blip))
+                    color = ('#%02x%02x%02x'):format(r, g, b)
+                    break
+                end
+                blip = GetNextBlipInfoId(sprite)
+            end
+            if color then break end
+        end
+    end
+    return { pts = pts, color = color }
 end
 
 local function waypointCoords()
@@ -486,6 +518,7 @@ onNui('mapData', function(_, cb)
         blips    = cachedBlips(),
         waypoint = waypointCoords(),
         route    = gpsRoute(),
+        blipRoute = blipRoute(),
     })
 end)
 

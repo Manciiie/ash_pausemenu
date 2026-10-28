@@ -94,6 +94,18 @@ Config.Map = {
         Images  = { atlas = 'cayo/atlas.webp', satellite = 'cayo/satellite.webp' },
     },
 
+    -- Îles ajoutées par des ressources de map, posées comme Cayo (une image par île, mer transparente).
+    -- Par défaut les 3 îles de coca de kq_islands_pack : textures de minimap de la ressource, calées sur ses ymap.
+    -- Images dans html/islands/, hors dépôt GitHub (contenu payant KuzQuality). Islands = {} pour les retirer.
+    Islands = {
+        { Bounds = { minX = 4163.2,  maxX = 4410.4,  minY = 7576.6,  maxY = 7854.7 },
+          Images = { atlas = 'islands/kq_coca_2_atlas.webp', satellite = 'islands/kq_coca_2_satellite.webp' } },
+        { Bounds = { minX = -6474.4, maxX = -6165.6, minY = 2693.0,  maxY = 2982.1 },
+          Images = { atlas = 'islands/kq_coca_3_atlas.webp', satellite = 'islands/kq_coca_3_satellite.webp' } },
+        { Bounds = { minX = 4934.8,  maxX = 5334.2,  minY = -1307.6, maxY = -918.6 },
+          Images = { atlas = 'islands/kq_coca_4_atlas.webp', satellite = 'islands/kq_coca_4_satellite.webp' } },
+    },
+
     -- Ordre d'affichage des catégories dans la légende
     CategoryOrder = { 'public', 'sante', 'shop', 'garage', 'job', 'poi' },
     -- Blips non listés dans Sprites : petits points tant qu'on n'a pas zoomé (false = masqués)

@@ -251,6 +251,7 @@ mark{background:rgba(139,92,246,.35);color:var(--text);border-radius:3px;padding
 .lg-sub.on{display:block}
 .lg-empty{padding:12px;color:var(--muted);font-size:11px;text-align:center}
 #lmap .leaflet-route-pane path{filter:drop-shadow(0 0 4px rgba(139,92,246,.8))}
+#lmap .leaflet-route-pane path.broute{filter:drop-shadow(0 0 3px rgba(0,0,0,.7))}
 
 /* ---------- Carte réaliste : la caméra du jeu au-dessus de la ville, marqueurs posés par-dessus ---------- */
 #r3d{position:fixed;inset:0;display:none;z-index:50;cursor:grab;overflow:hidden}
@@ -533,7 +534,7 @@ body.r3d #app{opacity:0;visibility:hidden;transition:none}
 
 <!-- Carte réaliste : par-dessus la caméra du jeu, le reste du menu est masqué -->
 <div id="r3d">
-  <svg class="r3-route"><path class="gl" id="r3gl"/><path class="ln" id="r3ln"/></svg>
+  <svg class="r3-route"><path class="gl" id="r3bgl"/><path class="ln" id="r3bln"/><path class="gl" id="r3gl"/><path class="ln" id="r3ln"/></svg>
   <div id="r3marks"></div>
   <div class="mtool r3-title">
     <button id="r3back" title="Carte plane"><svg width="16" height="16"><use href="#i-back"/></svg></button>
@@ -731,6 +732,7 @@ const msearch = $('msearch');
 let lmap = null, tileLayer = null, layerId = null, meMk = null, wpMk = null, blipLayer = null, dotRenderer = null;
 let mapInfo = null, results = [], resSel = 0, hiddenCats = new Set(), labels = true, showLbl = false;
 let routePane = null, routeLine = null, routePts = null, wpPos = null, routeTimers = [];
+let bRouteLine = null, bRoute = null;   // route d'un blip posée par un script (taxi, job…) : {pts, color}
 
 const catOf = id => (data.map && data.map.categories && data.map.categories[id]) || {label:"Points d'intérêt", color:'#f5c542'};
 const fmtDist = m => m >= 1000 ? (m / 1000).toFixed(1).replace('.', ',') + ' km' : Math.round(m) + ' m';
@@ -766,7 +768,7 @@ function initMap(){
   const c = m.calib || {ax:0.02072, bx:117.3, ay:0.0205, by:172.8};
   const crs = L.extend({}, L.CRS.Simple, { transformation: new L.Transformation(c.ax, c.bx, -c.ay, c.by) });
   lmap = L.map('lmap', {crs, minZoom:1, maxZoom:5, zoomControl:false, attributionControl:false, keyboard:false,
-    maxBounds:[[-7500, -6000], [9500, 8000]], maxBoundsViscosity:.8, zoomSnap:.5});
+    maxBounds:[[-7500, -8000], [9500, 8000]], maxBoundsViscosity:.8, zoomSnap:.5});   // x jusqu'à -8000 : île kq ouest
   lmap.setView(latlng(-200, -800), 3, {animate:false});   // centre-ville par défaut, en attendant la position
   blipLayer = L.layerGroup().addTo(lmap);
   dotRenderer = L.canvas({padding:.3});
@@ -840,17 +842,19 @@ function keyTile(p, W, H, sat){
   return 1;
 }
 
-// Peint une tuile : fond, océan, Cayo puis terre détourée (land = canvas ou null). Sert au worker et au fil principal.
+// Peint une tuile : fond, océan, îles (Cayo, îles de map) puis terre détourée (land = canvas ou null).
+// Sert au worker et au fil principal.
 function composeTile(ctx, ly, S, z, x, y, land){
-  const n = 2 ** z, t = 256 / n, tx = x * t, ty = y * t, k = S / t, O = ly.oceanPx, oc = ly.ocean, r = ly.cayoPx;
+  const n = 2 ** z, t = 256 / n, tx = x * t, ty = y * t, k = S / t, O = ly.oceanPx, oc = ly.ocean;
   ctx.fillStyle = ly.bg;
   ctx.fillRect(0, 0, S, S);
   if (oc) {
     const fx = oc.width / O.w, fy = oc.height / O.h;
     ctx.drawImage(oc, (tx - O.x) * fx, (ty - O.y) * fy, t * fx, t * fy, 0, 0, S, S);
   }
-  if (ly.cayo && r && r.x < tx + t && r.x + r.w > tx && r.y < ty + t && r.y + r.h > ty)
-    ctx.drawImage(ly.cayo, (r.x - tx) * k, (r.y - ty) * k, r.w * k, r.h * k);
+  for (const {img, px:r} of ly.isles)
+    if (img && r.x < tx + t && r.x + r.w > tx && r.y < ty + t && r.y + r.h > ty)
+      ctx.drawImage(img, (r.x - tx) * k, (r.y - ty) * k, r.w * k, r.h * k);
   if (land) ctx.drawImage(land, 0, 0, S, S);
 }
 
@@ -937,7 +941,7 @@ function buildTile(job, ly){
   if (!tileWorker) return mainTile(job, ly);
   if (!postedLayers.has(ly.layer)) {
     postedLayers.add(ly.layer);
-    tileWorker.postMessage({type:'layer', layer:ly.layer, bg:ly.bg, oceanPx:ly.oceanPx, cayoPx:ly.cayoPx, ocean:ly.ocean, cayo:ly.cayo});
+    tileWorker.postMessage({type:'layer', layer:ly.layer, bg:ly.bg, oceanPx:ly.oceanPx, ocean:ly.ocean, isles:ly.isles});
   }
   return new Promise(res => { const id = ++jobSeq; jobs.set(id, {res, job, ly}); tileWorker.postMessage({id, ...job}); });
 }
@@ -971,7 +975,7 @@ function getTile(o, coords){
   return p;
 }
 
-// images locales (océan, Cayo) décodées une seule fois en ImageBitmap (transmissibles au worker)
+// images locales (océan, îles) décodées une seule fois en ImageBitmap (transmissibles au worker)
 const localImgs = {};
 const localImg = url => localImgs[url] ??= new Promise(res => {
   const i = new Image();
@@ -981,7 +985,7 @@ const localImg = url => localImgs[url] ??= new Promise(res => {
   i.src = url;
 });
 
-// Une seule couche de tuiles (océan + Cayo + terre), affichées 4 px plus grandes et décalées de 2 px :
+// Une seule couche de tuiles (océan + îles + terre), affichées 4 px plus grandes et décalées de 2 px :
 // elles se chevauchent, pas de liseré entre les tuiles.
 const MapTiles = () => L.GridLayer.extend({
   createTile(coords, done){
@@ -1006,15 +1010,19 @@ function setLayer(id){
   if (tileLayer) lmap.removeLayer(tileLayer);
   let failed = 0, loaded = 0;
   if (!layerDefs[id]) {
-    // Cayo Perico : image posée sur sa zone GTA (mer déjà transparente dans les fichiers)
-    const cy = m.cayo, cyUrl = cy && cy.images && (cy.images[id] || cy.images.atlas);
-    let cayoPx = null;
-    if (cyUrl && cy.bounds) {
-      const b = cy.bounds, a = lmap.project(latlng(b.minX, b.maxY), 0), z = lmap.project(latlng(b.maxX, b.minY), 0);
-      cayoPx = {x:a.x, y:a.y, w:z.x - a.x, h:z.y - a.y};
+    // Cayo Perico et îles de map : une image posée sur sa zone GTA (mer déjà transparente dans les fichiers)
+    const src = [m.cayo, ...(Array.isArray(m.islands) ? m.islands : [])], isles = [];
+    for (const s of src) {
+      const url = s && s.images && (s.images[id] || s.images.atlas), b = s && s.bounds;
+      if (!url || !b) continue;
+      const a = lmap.project(latlng(b.minX, b.maxY), 0), z = lmap.project(latlng(b.maxX, b.minY), 0);
+      isles.push({url, px:{x:a.x, y:a.y, w:z.x - a.x, h:z.y - a.y}});
     }
-    const ly = layerDefs[id] = {layer:id, bg:oc.bg, oceanPx:OCEAN_PX, cayoPx, ocean:null, cayo:null};
-    ly.ready = Promise.all([localImg(oc.img), cyUrl ? localImg(cyUrl) : null]).then(([o, c]) => { ly.ocean = o; ly.cayo = c; });
+    const ly = layerDefs[id] = {layer:id, bg:oc.bg, oceanPx:OCEAN_PX, ocean:null, isles:[]};
+    ly.ready = Promise.all([localImg(oc.img), ...isles.map(i => localImg(i.url))]).then(([o, ...imgs]) => {
+      ly.ocean = o;
+      ly.isles = isles.map((i, n) => ({img:imgs[n], px:i.px})).filter(i => i.img);
+    });
   }
   // emprise de l'océan : aucune tuile hors de cette zone ; seules les tuiles du carré 256 px vont sur le CDN
   const bounds = L.latLngBounds(lmap.unproject([OCEAN_PX.x, OCEAN_PX.y + OCEAN_PX.h], 0), lmap.unproject([OCEAN_PX.x + OCEAN_PX.w, OCEAN_PX.y], 0));
@@ -1339,6 +1347,20 @@ function setRoute(pts){
   }
   if (R3.on) draw3d();
 }
+function setBlipRoute(r){
+  bRoute = r && Array.isArray(r.pts) && r.pts.length >= 6 ? {pts:r.pts, color:/^#[0-9a-f]{6}$/i.test(r.color || '') ? r.color : '#f2c94c'} : null;
+  if (lmap) {
+    if (bRouteLine) { lmap.removeLayer(bRouteLine); bRouteLine = null; }
+    if (bRoute) {
+      const ll = [];
+      for (let i = 0; i + 2 < bRoute.pts.length; i += 3) ll.push(latlng(bRoute.pts[i], bRoute.pts[i + 1]));
+      bRouteLine = L.polyline(ll, {pane:'route', color:bRoute.color, weight:4.5, opacity:.95, interactive:false, className:'broute'}).addTo(lmap);
+    }
+  }
+  const gl = $('r3bgl'), ln = $('r3bln');
+  if (bRoute) { gl.style.stroke = bRoute.color; gl.style.strokeOpacity = '.45'; ln.style.stroke = bRoute.color; }
+  if (R3.on) draw3d();
+}
 
 function centerMe(zoom){
   if (lmap && mapInfo && mapInfo.me) lmap.setView(latlng(mapInfo.me.x, mapInfo.me.y), zoom ?? lmap.getZoom(), {animate:false});
@@ -1365,6 +1387,7 @@ function openMap(){
       wpPos = null; setRoute(null);
       if (wpMk) { lmap.removeLayer(wpMk); $('dest').classList.remove('has'); $('dtx').textContent = 'Clique sur la carte pour placer un point GPS'; }
     }
+    setBlipRoute(r.blipRoute);
     requestAnimationFrame(() => { lmap.invalidateSize(); centerMe(4); });
   });
 }
@@ -1445,15 +1468,21 @@ function render3d(){
     const lbl = labels && !m.dot && s[2] < 2600;   // étiquettes des blips proches seulement
     if (lbl !== m.lbl) { m.el.classList.toggle('nl', !lbl); m.lbl = lbl; }
   }
-  let d = '', pen = false;
-  if (routePts && wpPos) for (let i = 0; i + 2 < routePts.length; i += 3) {
-    const s = project(v, routePts[i], routePts[i + 1], routePts[i + 2] + 1.5);
-    if (!s) { pen = false; continue; }
-    d += (pen ? 'L' : 'M') + s[0].toFixed(1) + ' ' + s[1].toFixed(1);
-    pen = true;
-  }
+  const path = pts => {
+    let d = '', pen = false;
+    if (pts) for (let i = 0; i + 2 < pts.length; i += 3) {
+      const s = project(v, pts[i], pts[i + 1], pts[i + 2] + 1.5);
+      if (!s) { pen = false; continue; }
+      d += (pen ? 'L' : 'M') + s[0].toFixed(1) + ' ' + s[1].toFixed(1);
+      pen = true;
+    }
+    return d;
+  };
+  const d = path(wpPos && routePts), bd = path(bRoute && bRoute.pts);
   $('r3gl').setAttribute('d', d);
   $('r3ln').setAttribute('d', d);
+  $('r3bgl').setAttribute('d', bd);
+  $('r3bln').setAttribute('d', bd);
 }
 
 // Envoie la pose voulue au Lua, une requête à la fois (la dernière pose gagne)
