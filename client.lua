@@ -258,6 +258,7 @@ local function openMenu()
                     minDistance = (m.Realistic or {}).MinDistance, maxDistance = (m.Realistic or {}).MaxDistance,
                 } or nil,
                 cayo = m.Cayo and m.Cayo.Enabled and { bounds = m.Cayo.Bounds, images = m.Cayo.Images } or nil,
+                postals = m.Postals and m.Postals.Enabled ~= false and { file = m.Postals.File, minZoom = m.Postals.MinZoom } or nil,
             } or nil,
         }
         staticSent = true

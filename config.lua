@@ -161,6 +161,16 @@ Config.Map = {
             ['jg-hud'] = 'toggleHud',
         },
     },
+
+    -- Codes postaux écrits sur la carte plane (bouton « Postaux »), cherchables par numéro dans la recherche,
+    -- et code postal le plus proche sous « TU ES À ». Fichier au format nearest-postal : [{ "x", "y", "code" }].
+    -- Par défaut new-postals de DevBlocky/nearest-postal (licence MIT, html/postals/LICENSE).
+    -- Autre jeu de codes : dépose son JSON dans html/postals/ et indique son chemin ici.
+    Postals = {
+        Enabled = true,
+        File    = 'postals/new-postals.json',
+        MinZoom = 3,   -- zoom à partir duquel les numéros s'affichent (carte de 1 à 5)
+    },
 }
 
 ------------------------------------------------------------------------

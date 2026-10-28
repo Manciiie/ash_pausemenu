@@ -469,13 +469,14 @@ body.r3d #app{opacity:0;visibility:hidden;transition:none}
 
         <div class="mtool msearch">
           <label><svg width="15" height="15" style="color:var(--violet2);flex-shrink:0"><use href="#i-search"/></svg>
-            <input id="msearch" type="text" placeholder="Rechercher un lieu, un service, une boutique…" autocomplete="off" spellcheck="false"></label>
+            <input id="msearch" type="text" placeholder="Rechercher un lieu, une boutique, un code postal…" autocomplete="off" spellcheck="false"></label>
           <div class="mres" id="mres"></div>
         </div>
         <div class="mtool mbar" id="mbar">
           <span id="layerBtns" style="display:flex;gap:4px"></span>
           <span class="vsep"></span>
           <button id="btnLabels" class="on">Noms</button>
+          <button id="btnPostal" style="display:none" title="Codes postaux">Postaux</button>
           <button id="btnNative" title="Ouvrir la carte GTA"><svg width="13" height="13"><use href="#i-map"/></svg>Carte GTA</button>
         </div>
         <div class="mtool zoom">
@@ -790,6 +791,7 @@ function initMap(){
   lmap.on('contextmenu', () => clearWaypoint());
   lmap.on('zoomend', zoomClasses);
   zoomClasses();
+  loadPostals();
   return true;
 }
 
@@ -1026,6 +1028,7 @@ function setLayer(id){
     .addTo(lmap);
   tileLayer.bringToBack();
   $('lmap').style.background = oc.bg;
+  if (postalLayer && lmap.hasLayer(postalLayer)) postalLayer.redraw();   // couleurs des numéros selon le fond
   markLayers();
 }
 function markLayers(){
@@ -1201,6 +1204,94 @@ function renderBlips(){
   });
 }
 
+/* ---------- Codes postaux ----------
+   Numéros dessinés dans des tuiles canvas (aucun élément HTML par code). Pour chaque zoom entier, les codes qui se
+   chevauchent sont écartés une fois pour toutes : toutes les tuiles font le même choix, aucun numéro coupé au bord. */
+const POSTAL_KEY = 'ash_pausemenu_postals', POSTAL_FONT = '600 10px Inter, sans-serif', POSTAL_CELL = 24;
+let postals = null, postalLayer = null, postalsOn = true, postalFit = {};
+try { postalsOn = localStorage.getItem(POSTAL_KEY) !== '0'; } catch (e) { /* stockage indisponible : affichés */ }
+
+function loadPostals(){
+  const cfg = data.map.postals;
+  if (!cfg || !cfg.file || postals) return;
+  fetch(cfg.file).then(r => r.json()).then(list => {
+    measureCtx.font = POSTAL_FONT;
+    postals = (Array.isArray(list) ? list : []).filter(p => p && isFinite(p.x) && isFinite(p.y) && p.code != null).map(p => {
+      const code = String(p.code), pt = lmap.project(latlng(+p.x, +p.y), 0);
+      return {x:+p.x, y:+p.y, code, px:pt.x, py:pt.y, w:Math.ceil(measureCtx.measureText(code).width) + 4};
+    });
+    postalFit = {};
+    if (!postals.length) { postals = null; return; }
+    $('btnPostal').style.display = '';
+    showPostals();
+    if (mapInfo) setWhere(mapInfo);
+  }).catch(() => { /* fichier absent ou invalide : pas de codes postaux */ });
+}
+
+// codes gardés au zoom z : un code dont le cadre touche celui d'un code déjà gardé est écarté (grille de cases)
+function postalsAt(z){
+  if (postalFit[z]) return postalFit[z];
+  const k = 2 ** z, grid = new Map(), keep = [];
+  for (const p of postals) {
+    const x = p.px * k, y = p.py * k, b = [x - p.w / 2, y - 7, x + p.w / 2, y + 7];
+    const c0 = Math.floor(b[0] / POSTAL_CELL), c1 = Math.floor(b[2] / POSTAL_CELL), r0 = Math.floor(b[1] / POSTAL_CELL), r1 = Math.floor(b[3] / POSTAL_CELL);
+    let hit = false;
+    for (let cx = c0; cx <= c1 && !hit; cx++) for (let cy = r0; cy <= r1 && !hit; cy++)
+      hit = (grid.get(cx + ',' + cy) || []).some(o => b[0] < o[2] && b[2] > o[0] && b[1] < o[3] && b[3] > o[1]);
+    if (hit) continue;
+    for (let cx = c0; cx <= c1; cx++) for (let cy = r0; cy <= r1; cy++) {
+      const key = cx + ',' + cy;
+      grid.has(key) ? grid.get(key).push(b) : grid.set(key, [b]);
+    }
+    keep.push(p);
+  }
+  return postalFit[z] = keep;
+}
+
+const PostalTiles = () => L.GridLayer.extend({
+  createTile(coords){
+    const c = document.createElement('canvas'), s = this.getTileSize(), r = Math.min(2, window.devicePixelRatio || 1);
+    c.width = s.x * r; c.height = s.y * r;
+    c.style.margin = '0';   // pas le décalage de 2 px des tuiles de fond
+    const ctx = c.getContext('2d'), k = 2 ** coords.z, ox = coords.x * s.x, oy = coords.y * s.y, sat = layerId === 'satellite';
+    ctx.scale(r, r);
+    ctx.font = POSTAL_FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round'; ctx.lineWidth = 3;
+    ctx.strokeStyle = sat ? 'rgba(0,0,0,.75)' : 'rgba(255,255,255,.85)';
+    ctx.fillStyle = sat ? '#f2f2f2' : '#4b5059';
+    for (const p of postalsAt(coords.z)) {
+      const x = p.px * k - ox, y = p.py * k - oy;
+      if (x < -p.w || x > s.x + p.w || y < -8 || y > s.y + 8) continue;
+      ctx.strokeText(p.code, x, y);
+      ctx.fillText(p.code, x, y);
+    }
+    return c;
+  },
+});
+
+function showPostals(){
+  if (!lmap || !postals) return;
+  $('btnPostal').classList.toggle('on', postalsOn);
+  if (!postalsOn) { if (postalLayer) lmap.removeLayer(postalLayer); return; }
+  if (!postalLayer) {
+    const pane = lmap.createPane('postal');
+    pane.style.zIndex = 380;   // sur le fond, sous l'itinéraire et les blips
+    pane.style.pointerEvents = 'none';
+    postalLayer = new (PostalTiles())({pane:'postal', minZoom:data.map.postals.minZoom ?? 3, maxZoom:5, maxNativeZoom:5,
+      noWrap:true, keepBuffer:1, updateWhenZooming:false});
+  }
+  postalLayer.addTo(lmap);
+}
+
+function nearestPostal(x, y){
+  let best = null, bd = Infinity;
+  (postals || []).forEach(p => { const d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d < bd) { bd = d; best = p; } });
+  return best;
+}
+function setWhere(r){
+  const pc = r.me && nearestPostal(r.me.x, r.me.y);
+  $('mZone').textContent = [r.zone, pc && 'Code postal ' + pc.code].filter(Boolean).join(' · ');
+}
+
 function setDest(x, y, label){
   const me = mapInfo && mapInfo.me;
   const d = me ? Math.hypot(x - me.x, y - me.y) : 0;
@@ -1263,7 +1354,7 @@ function openMap(){
     if (!r || !r.me) return;
     mapInfo = r;
     $('mStreet').textContent = r.street || '—';
-    $('mZone').textContent = r.zone || '';
+    setWhere(r);
     $('mDir').textContent = r.dir || '—';
     if (!meMk) meMk = L.marker(latlng(r.me.x, r.me.y), {interactive:false, zIndexOffset:1000, icon: meIcon(r.me.heading)}).addTo(lmap);
     else meMk.setLatLng(latlng(r.me.x, r.me.y)).setIcon(meIcon(r.me.heading));
@@ -1536,12 +1627,16 @@ function renderResults(){
   const q = norm(msearch.value.trim());
   if (!q) { results = []; showResults(false); return; }
   const me = mapInfo && mapInfo.me;
-  results = allPlaces().filter(p => !p.unknown).filter(p => norm(p.label).includes(q) || norm(catOf(p.cat).label).includes(q))
-    .map(p => ({...p, d: me ? Math.hypot(p.x - me.x, p.y - me.y) : 0}))
-    .sort((a, b) => a.d - b.d).slice(0, 30);
+  const dist = p => ({...p, d: me ? Math.hypot(p.x - me.x, p.y - me.y) : 0});
+  // un numéro : codes postaux qui commencent par ce numéro, en tête de liste
+  const pcs = postals && /^\d+$/.test(q) ? postals.filter(p => p.code.startsWith(q))
+    .sort((a, b) => a.code.length - b.code.length || a.code.localeCompare(b.code)).slice(0, 8)
+    .map(p => dist({x:p.x, y:p.y, label:'Code postal ' + p.code, color:'#9aa3b2'})) : [];
+  results = pcs.concat(allPlaces().filter(p => !p.unknown).filter(p => norm(p.label).includes(q) || norm(catOf(p.cat).label).includes(q))
+    .map(dist).sort((a, b) => a.d - b.d)).slice(0, 30);
   resSel = 0;
   $('mres').innerHTML = results.length ? results.map((p, i) =>
-    `<button data-i="${i}" class="${i === 0 ? 'sel' : ''}"><i style="background:${esc(catOf(p.cat).color)}"></i>${esc(p.label)}<small>${fmtDist(p.d)}</small></button>`).join('')
+    `<button data-i="${i}" class="${i === 0 ? 'sel' : ''}"><i style="background:${esc(p.color || catOf(p.cat).color)}"></i>${esc(p.label)}<small>${fmtDist(p.d)}</small></button>`).join('')
     : '';
   document.querySelectorAll('#mres button').forEach(b => b.onmousedown = e => { e.preventDefault(); pickResult(+b.dataset.i); });
   showResults(true);
@@ -1568,6 +1663,11 @@ $('zout').onclick = () => lmap && lmap.zoomOut();
 $('zme').onclick = () => centerMe(Math.max(lmap ? lmap.getZoom() : 4, 4));
 $('dclr').onclick = clearWaypoint;
 $('btnNative').onclick = $('moffNative').onclick = () => post('map');
+$('btnPostal').onclick = () => {
+  postalsOn = !postalsOn;
+  try { localStorage.setItem(POSTAL_KEY, postalsOn ? '1' : '0'); } catch (e) {}
+  showPostals();
+};
 $('btnLabels').onclick = () => {
   labels = !labels;
   $('btnLabels').classList.toggle('on', labels);
