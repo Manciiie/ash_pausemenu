@@ -96,7 +96,7 @@ Config.Map = {
 
     -- Îles ajoutées par des ressources de map, posées comme Cayo (une image par île, mer transparente).
     -- Par défaut les 3 îles de coca de kq_islands_pack : textures de minimap de la ressource, calées sur ses ymap.
-    -- Images dans html/islands/, hors dépôt GitHub (contenu payant KuzQuality). Islands = {} pour les retirer.
+    -- Images dans html/islands/. Islands = {} pour les retirer.
     Islands = {
         { Bounds = { minX = 4163.2,  maxX = 4410.4,  minY = 7576.6,  maxY = 7854.7 },
           Images = { atlas = 'islands/kq_coca_2_atlas.webp', satellite = 'islands/kq_coca_2_satellite.webp' } },
