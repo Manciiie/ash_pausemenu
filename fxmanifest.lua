@@ -5,7 +5,7 @@ lua54 'yes'
 name 'ash_pausemenu'
 author 'ASH City'
 description 'Menu pause ASH City (remplace ÉCHAP) avec bouton pour quitter la session'
-version '1.13.1'
+version '1.15.0'
 
 shared_scripts {
     '@ox_lib/init.lua',
@@ -13,7 +13,10 @@ shared_scripts {
 }
 
 client_script 'client.lua'
-server_script 'server.lua'
+server_scripts {
+    '@oxmysql/lib/MySQL.lua',
+    'server.lua',
+}
 
 ui_page 'html/index.html'
 
@@ -28,4 +31,5 @@ files {
 dependencies {
     'qb-core',
     'ox_lib',
+    'oxmysql',
 }

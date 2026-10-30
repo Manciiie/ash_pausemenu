@@ -509,6 +509,7 @@ onNui('mapData', function(_, cb)
     local s1, s2 = GetStreetNameAtCoord(c.x, c.y, c.z)
     local street = GetStreetNameFromHashKey(s1)
     if s2 ~= 0 then street = street .. ' / ' .. GetStreetNameFromHashKey(s2) end
+    local activeJobs = (mapCfg.ActiveJobs or {}).Enabled ~= false and lib.callback.await('ash_pausemenu:activeJobs', false) or nil
 
     cb({
         me       = { x = c.x, y = c.y, z = c.z, heading = heading },
@@ -519,6 +520,7 @@ onNui('mapData', function(_, cb)
         waypoint = waypointCoords(),
         route    = gpsRoute(),
         blipRoute = blipRoute(),
+        activeJobs = activeJobs,
     })
 end)
 

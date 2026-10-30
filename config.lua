@@ -183,6 +183,13 @@ Config.Map = {
         File    = 'postals/new-postals.json',
         MinZoom = 3,   -- zoom à partir duquel les numéros s'affichent (carte de 1 à 5)
     },
+
+    -- Blips de métier qs-jobs-creator (table qs_jobs_data) entourés d'un anneau vert quand au moins
+    -- un employé est en service. Vaut pour tous les joueurs, sur la carte plane et la réaliste.
+    ActiveJobs = {
+        Enabled = true,
+        Refresh = 300,   -- secondes entre deux relectures des blips en base
+    },
 }
 
 ------------------------------------------------------------------------

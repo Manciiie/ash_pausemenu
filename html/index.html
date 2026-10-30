@@ -252,6 +252,23 @@ mark{background:rgba(139,92,246,.35);color:var(--text);border-radius:3px;padding
 .lg-empty{padding:12px;color:var(--muted);font-size:11px;text-align:center}
 #lmap .leaflet-route-pane path{filter:drop-shadow(0 0 4px rgba(139,92,246,.8))}
 #lmap .leaflet-route-pane path.broute{filter:drop-shadow(0 0 3px rgba(0,0,0,.7))}
+.job-on{pointer-events:none}
+.bedit{z-index:600;width:230px;box-sizing:border-box;flex-direction:column;align-items:stretch;gap:8px;padding:10px}
+.bedit b{font:700 12px Inter,sans-serif;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bedit label{display:flex;align-items:center;gap:8px;font:600 11px Inter,sans-serif;color:var(--text)}
+.bedit input[type=range]{flex:1;min-width:0;accent-color:#8b5cf6}
+.bedit .shp,.bedit .act{display:flex;gap:4px}
+.bedit button{flex:1;min-width:0;height:28px;padding:0 4px;border-radius:8px;border:1px solid var(--line2);background:none;color:var(--text);font:600 11px Inter,sans-serif;cursor:pointer}
+.bedit button:hover{background:rgba(255,255,255,.06)}
+.bedit .shp button.on,.bedit .act .ok{background:rgba(139,92,246,.25);border-color:rgba(139,92,246,.55);color:#fff}
+.r3-mk .sq.sh-rond{border-radius:50%}
+.r3-mk .sq.sh-losange{border:0;border-radius:0;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.r3-mk .sq.sh-triangle{border:0;border-radius:0;clip-path:polygon(50% 0,100% 100%,0 100%)}
+.r3-mk .sq.sh-hexagone{border:0;border-radius:0;clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
+.job-on i,.r3-mk.act .ring{position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;border:2px solid #34d399;box-shadow:0 0 8px rgba(52,211,153,.8);animation:jobPulse 1.8s ease-out infinite}
+.r3-mk.act{pointer-events:none}
+.r3-mk.act .ring{left:0;top:0}
+@keyframes jobPulse{0%{transform:scale(.7);opacity:1}100%{transform:scale(1.5);opacity:0}}
 
 /* ---------- Carte réaliste : la caméra du jeu au-dessus de la ville, marqueurs posés par-dessus ---------- */
 #r3d{position:fixed;inset:0;display:none;z-index:50;cursor:grab;overflow:hidden}
@@ -467,6 +484,7 @@ body.r3d #app{opacity:0;visibility:hidden;transition:none}
       <!-- Carte -->
       <div class="pane" id="pane-map">
         <div id="lmap"></div>
+        <div class="mtool bedit" id="bedit" style="display:none"></div>
 
         <div class="mtool msearch">
           <label><svg width="15" height="15" style="color:var(--violet2);flex-shrink:0"><use href="#i-search"/></svg>
@@ -730,7 +748,7 @@ $('vclose').addEventListener('click', closeView);
 
 /* ---------- Carte NUI (Leaflet) ---------- */
 const msearch = $('msearch');
-let lmap = null, tileLayer = null, layerId = null, meMk = null, wpMk = null, blipLayer = null, dotRenderer = null;
+let lmap = null, tileLayer = null, layerId = null, meMk = null, wpMk = null, blipLayer = null, jobLayer = null, dotRenderer = null;
 let mapInfo = null, results = [], resSel = 0, hiddenCats = new Set(), labels = true, showLbl = false;
 let routePane = null, routeLine = null, routePts = null, wpPos = null, routeTimers = [];
 let bRouteLine = null, bRoute = null;   // route d'un blip posée par un script (taxi, job…) : {pts, color}
@@ -772,6 +790,7 @@ function initMap(){
     maxBounds:[[-7500, -8000], [9500, 8000]], maxBoundsViscosity:.8, zoomSnap:.5});   // x jusqu'à -8000 : île kq ouest
   lmap.setView(latlng(-200, -800), 3, {animate:false});   // centre-ville par défaut, en attendant la position
   blipLayer = L.layerGroup().addTo(lmap);
+  jobLayer = L.layerGroup().addTo(lmap);
   dotRenderer = L.canvas({padding:.3});
 
   // boutons de fond de carte (Atlas / Satellite / Réaliste), dans la carte plane et dans la vue réaliste
@@ -791,8 +810,8 @@ function initMap(){
   routePane.style.pointerEvents = 'none';
   $('legend').onclick = legendClick;
 
-  lmap.on('click', e => setWaypoint(e.latlng.lng, e.latlng.lat, true));
-  lmap.on('contextmenu', () => clearWaypoint());
+  lmap.on('click', e => edit ? closeBlipEdit(false) : setWaypoint(e.latlng.lng, e.latlng.lat, true));
+  lmap.on('contextmenu', () => edit ? closeBlipEdit(false) : clearWaypoint());
   lmap.on('zoomend', zoomClasses);
   zoomClasses();
   loadPostals();
@@ -1067,6 +1086,15 @@ function roundRect(ctx, x, y, w, h, r){
   ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
 }
+// Contour d'un blip de demi-taille r
+function blipPath(ctx, shape, x, y, r){
+  const poly = pts => { ctx.beginPath(); pts.forEach(([a, b], i) => i ? ctx.lineTo(x + a * r, y + b * r) : ctx.moveTo(x + a * r, y + b * r)); ctx.closePath(); };
+  if (shape === 'rond') { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); }
+  else if (shape === 'losange') poly([[0, -1.3], [1.3, 0], [0, 1.3], [-1.3, 0]]);
+  else if (shape === 'triangle') poly([[0, -1.3], [1.2, 1], [-1.2, 1]]);
+  else if (shape === 'hexagone') poly([[-.6, -1.1], [.6, -1.1], [1.2, 0], [.6, 1.1], [-.6, 1.1], [-1.2, 0]]);
+  else roundRect(ctx, x - r, y - r, r * 2, r * 2, r * .58);
+}
 let BlipClass;
 const BlipMark = () => L.CircleMarker.extend({
   _blip: true,
@@ -1076,19 +1104,20 @@ const BlipMark = () => L.CircleMarker.extend({
   },
   // zone à redessiner : le carré, plus l'étiquette au-dessus quand elle est affichée
   _updateBounds(){
-    const p = this._point, w = showLbl && this.options.label ? this._labelW() : 0, hx = Math.max(8, w / 2 + 2);
-    this._pxBounds = new L.Bounds(p.subtract([hx, w ? 31 : 8]), p.add([hx, 10]));
+    const p = this._point, w = showLbl && this.options.label ? this._labelW() : 0, h = this.options.size * .7 + 2, hx = Math.max(h, w / 2 + 2);
+    this._pxBounds = new L.Bounds(p.subtract([hx, w ? h + 23 : h]), p.add([hx, h + 2]));
   },
   _updatePath(){
     if (!this._renderer._drawing || this._empty()) return;
     const ctx = this._renderer._ctx, p = this._point, o = this.options;
     ctx.fillStyle = 'rgba(0,0,0,.3)';
-    roundRect(ctx, p.x - 7, p.y - 5, 14, 14, 4); ctx.fill();
-    roundRect(ctx, p.x - 6, p.y - 6, 12, 12, 3.5);
+    const r = o.size / 2;
+    blipPath(ctx, o.shape, p.x, p.y + 1, r + 1); ctx.fill();
+    blipPath(ctx, o.shape, p.x, p.y, r);
     ctx.fillStyle = o.fillColor; ctx.fill();
     ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.stroke();
     if (showLbl && o.label) {
-      const w = this._labelW(), y = p.y - 29;
+      const w = this._labelW(), y = p.y - r - 23;
       roundRect(ctx, p.x - w / 2, y, w, 19, 6);
       ctx.fillStyle = 'rgba(12,7,24,.92)'; ctx.fill();
       ctx.lineWidth = 1; ctx.strokeStyle = '#3b2a60'; ctx.stroke();
@@ -1212,18 +1241,100 @@ function toggleBlips(){
   if (R3.on) build3d();
 }
 
+/* ---------- Style d'un blip : taille et forme ----------
+   Clic droit sur un blip de la carte plane. Réglage pour ce blip seul ou pour tous ceux du même type,
+   mémorisé sur le PC du joueur et repris par la carte réaliste. */
+const STYLE_KEY = 'ash_pausemenu_blipstyle', BLIP_SIZE = 12;
+const SHAPES = [['carre', 'Carré', '■'], ['rond', 'Rond', '●'], ['losange', 'Losange', '◆'], ['triangle', 'Triangle', '▲'], ['hexagone', 'Hexagone', '⬢']];
+const placeKey = p => Math.round(p.x) + ':' + Math.round(p.y);
+let edit = null;
+function readStyles(){
+  const clean = o => {
+    const r = {};
+    Object.entries(o || {}).forEach(([k, v]) => {
+      r[k] = {size:Math.min(28, Math.max(6, +v.size || BLIP_SIZE)), shape:SHAPES.some(s => s[0] === v.shape) ? v.shape : 'carre'};
+    });
+    return r;
+  };
+  try { const s = JSON.parse(localStorage.getItem(STYLE_KEY) || '{}'); return {one:clean(s.one), type:clean(s.type)}; }
+  catch (e) { return {one:{}, type:{}}; }
+}
+let blipStyles = readStyles();
+const styleOf = p => blipStyles.one[placeKey(p)] || blipStyles.type[typeKey(p)] || null;
+
+function closeBlipEdit(save){
+  if (!edit) return;
+  if (save) try { localStorage.setItem(STYLE_KEY, JSON.stringify(blipStyles)); } catch (e) {}
+  else blipStyles = readStyles();
+  edit = null;
+  $('bedit').style.display = 'none';
+  renderBlips();
+}
+function applyBlipEdit(){
+  const {p, style, all} = edit, k = placeKey(p), t = typeKey(p);
+  blipStyles = readStyles();
+  delete blipStyles.one[k];
+  if (all) blipStyles.type[t] = {...style}; else blipStyles.one[k] = {...style};
+  renderBlips();
+}
+function openBlipEdit(p, pt){
+  const box = $('bedit'), cur = styleOf(p);
+  edit = {p, all:false, style:{size:(cur && cur.size) || BLIP_SIZE, shape:(cur && cur.shape) || 'carre'}};
+  box.innerHTML = `<b>${esc(p.label)}</b>
+    <label>Taille <input type="range" min="6" max="28" step="1" value="${edit.style.size}" id="beSize"><span id="beVal">${edit.style.size}</span></label>
+    <div class="shp">${SHAPES.map(([id, l, g]) => `<button data-shape="${id}" title="${l}" class="${id === edit.style.shape ? 'on' : ''}">${g}</button>`).join('')}</div>
+    <label><input type="checkbox" id="beAll"> Tous les « ${esc(p.label)} »</label>
+    <div class="act"><button class="ok" id="beSave">Enregistrer</button><button id="beCancel">Annuler</button></div>
+    <div class="act"><button id="beReset">Réinitialiser</button></div>`;
+  box.style.display = 'flex';
+  const W = box.parentElement.clientWidth, H = box.parentElement.clientHeight, x = pt.x + 14, y = pt.y - 20;
+  box.style.left = Math.max(8, Math.min(x, W - box.offsetWidth - 8)) + 'px';
+  box.style.top = Math.max(8, Math.min(y, H - box.offsetHeight - 8)) + 'px';
+  $('beSize').oninput = e => { edit.style.size = +e.target.value; $('beVal').textContent = e.target.value; applyBlipEdit(); };
+  box.querySelectorAll('[data-shape]').forEach(b => b.onclick = () => {
+    edit.style.shape = b.dataset.shape;
+    box.querySelectorAll('[data-shape]').forEach(o => o.classList.toggle('on', o === b));
+    applyBlipEdit();
+  });
+  $('beAll').onchange = e => { edit.all = e.target.checked; applyBlipEdit(); };
+  $('beSave').onclick = () => closeBlipEdit(true);
+  $('beCancel').onclick = () => closeBlipEdit(false);
+  $('beReset').onclick = () => {
+    blipStyles = readStyles();
+    delete blipStyles.one[placeKey(p)];
+    delete blipStyles.type[typeKey(p)];
+    closeBlipEdit(true);
+  };
+}
+
+// Métiers ouverts, sauf ceux dont le blip est masqué dans la légende
+function activeJobs(){
+  const list = mapInfo && Array.isArray(mapInfo.activeJobs) ? mapInfo.activeJobs : [];
+  const off = allPlaces().filter(isHidden);
+  return list.filter(j => !off.some(p => Math.hypot(p.x - j.x, p.y - j.y) < 8));
+}
+
 function renderBlips(){
   if (!lmap) return;
   BlipClass = BlipClass || BlipMark();
   blipLayer.clearLayers();
+  jobLayer.clearLayers();
   if (!blipsOn) return;
+  // anneau vert sur les blips des métiers ouverts (au moins un employé en service)
+  activeJobs().forEach(j => L.marker(latlng(j.x, j.y), {interactive:false, keyboard:false, zIndexOffset:-100,
+    icon:L.divIcon({className:'job-on', iconSize:[30, 30], html:'<i></i>'})}).addTo(jobLayer));
   // petits points d'abord, blips classés par-dessus
   allPlaces().filter(p => !isHidden(p)).sort((a, b) => b.unknown - a.unknown).forEach(p => {
-    const mk = p.unknown
+    const st = styleOf(p);
+    const mk = p.unknown && !st
       ? L.circleMarker(latlng(p.x, p.y), {renderer:dotRenderer, radius:dotRadius(), color:'rgba(0,0,0,.55)', weight:1.5, fillColor:catOf(p.cat).color, fillOpacity:.9, bubblingMouseEvents:false})
           .bindTooltip(esc(p.label), {className:'mlb', direction:'top', offset:[0, -4]})
-      : new BlipClass(latlng(p.x, p.y), {renderer:dotRenderer, radius:7, fillColor:catOf(p.cat).color, label:p.label || '', bubblingMouseEvents:false});
-    mk.on('click', e => { L.DomEvent.stopPropagation(e); setWaypoint(p.x, p.y, true, p.label); }).addTo(blipLayer);
+      : new BlipClass(latlng(p.x, p.y), {renderer:dotRenderer, radius:Math.max(7, ((st && st.size) || BLIP_SIZE) / 2 + 1), size:(st && st.size) || BLIP_SIZE,
+          shape:st && st.shape, fillColor:catOf(p.cat).color, label:p.unknown ? '' : p.label || '', bubblingMouseEvents:false});
+    if (p.unknown && st) mk.bindTooltip(esc(p.label), {className:'mlb', direction:'top', offset:[0, -4]});
+    mk.on('click', e => { L.DomEvent.stopPropagation(e); setWaypoint(p.x, p.y, true, p.label); })
+      .on('contextmenu', e => { L.DomEvent.stop(e); openBlipEdit(p, e.containerPoint); })
+      .addTo(blipLayer);
   });
 }
 
@@ -1386,6 +1497,7 @@ function openMap(){
     loadLeaflet().then(ok => { if (ok && currentView === 'map' && initMap()) openMap(); else if (!ok) $('moff').classList.add('on'); });
     return;
   }
+  closeBlipEdit(false);   // panneau de style laissé ouvert à la fermeture du menu
   requestAnimationFrame(() => lmap.invalidateSize());
   post('mapData').then(r => {
     if (!r || !r.me) return;
@@ -1454,9 +1566,13 @@ function build3d(){
     R3.marks.push(m);
     return m;
   };
-  if (blipsOn) allPlaces().filter(p => !isHidden(p)).sort((a, b) => b.unknown - a.unknown).forEach(p =>
-    add(p.unknown ? 'dot' : '', `<i class="sq" style="background:${esc(catOf(p.cat).color)}"></i><i class="st"></i>`,
-      p.x, p.y, p.z, 6, p.label, () => setWaypoint(p.x, p.y, true, p.label)));
+  if (blipsOn) activeJobs().forEach(j => add('act', '<i class="ring"></i>', j.x, j.y, j.z, 6, '', null));
+  if (blipsOn) allPlaces().filter(p => !isHidden(p)).sort((a, b) => b.unknown - a.unknown).forEach(p => {
+    const st = styleOf(p), n = st && st.size, h = n / 2;
+    const dim = n ? `;width:${n}px;height:${n}px;left:${-h}px;top:${-h}px` : '';
+    add(p.unknown ? 'dot' : '', `<i class="sq${st && st.shape ? ' sh-' + st.shape : ''}" style="background:${esc(catOf(p.cat).color)}${dim}"></i><i class="st"${n ? ` style="top:${h}px"` : ''}></i>`,
+      p.x, p.y, p.z, 6, p.label, () => setWaypoint(p.x, p.y, true, p.label));
+  });
   R3.wp = add('wp', WP_SVG, 0, 0, null, 0, '', null);
   add('me', '<i class="sq"></i>', me.x, me.y, me.z, 1.5, '', null);
   draw3d();

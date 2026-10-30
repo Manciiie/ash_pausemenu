@@ -10,6 +10,8 @@ Remplace le menu pause GTA (ÉCHAP, et P en option) par un menu au thème ASH.
 - **Îles de map** : les 3 îles de coca de `kq_islands_pack` sont posées sur la carte NUI comme Cayo (textures de minimap de la ressource, calées sur ses ymap ; vue Satellite tirée d'une image aérienne des îles). Images dans `html/islands/`. Réglages dans `Config.Map.Islands`
 - **Cayo Perico sur la carte GTA native** : l'île s'affiche dans le menu pause GTA (bouton « Carte GTA ») et la minimap passe sur la carte de l'île à moins de 2,2 km. Réglages dans `Config.CayoNative`
 - **Bouton « Blips »** (carte plane et réaliste) : masque ou réaffiche tous les blips d'un clic, mémorisé sur le PC du joueur. Blips dessinés en petit (12 px) pour ne pas cacher la carte
+- **Style des blips** : clic droit sur un blip de la carte plane pour régler sa taille et sa forme (carré, rond, losange, triangle, hexagone), pour ce blip seul ou tous ceux du même type. Bouton « Enregistrer », réglages gardés sur le PC du joueur et repris par la carte réaliste
+- **Métiers ouverts** : les blips de qs-jobs-creator (table `qs_jobs_data`) ont un anneau vert pulsant quand au moins un employé est en service, sur la carte plane et la réaliste, pour tous les joueurs. État relu à chaque ouverture de la carte (10 s de cache). Réglages dans `Config.Map.ActiveJobs`
 - **Légende « Lieux »** : un œil par catégorie et par type de lieu (ex. « Supérette ») pour masquer des blips, bouton « Tout masquer / Tout afficher », clic sur un type = aller au plus proche. Le choix est mémorisé sur le PC du joueur et vaut aussi pour la carte réaliste
 - **Carte réaliste** (bouton « Réaliste ») : la caméra du jeu monte au-dessus de la vraie ville ; glisser = déplacer, clic droit glissé = tourner / incliner, molette = zoom, clic = point GPS là où on vise (bâtiment compris), ÉCHAP = retour à la carte plane. Blips, point GPS et itinéraire GPS dessinés sur les bâtiments. Réglages dans `Config.Map.Realistic` (`Enabled = false` pour retirer le bouton)
 - **Itinéraire GPS** tracé sur la carte plane comme sur la réaliste, ainsi que la route posée par un script sur un blip (`SetBlipRoute` : taxi, jobs, missions), dans la couleur du blip
@@ -25,7 +27,7 @@ Remplace le menu pause GTA (ÉCHAP, et P en option) par un menu au thème ASH.
 - **Quitter la session** : confirmation par maintien, refusée si menotté / à terre / mort, anti-spam
 
 ## Dépendances
-`qb-core`, `ox_lib` — optionnel : `ash_notify` (notifications, secours ox_lib), `ash_vipdaily`
+`qb-core`, `ox_lib`, `oxmysql` — optionnel : `ash_notify` (notifications, secours ox_lib), `ash_vipdaily`
 
 ## Installation (Nitrado)
 1. Déposer le dossier dans `resources/` via FTP.

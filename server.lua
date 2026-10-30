@@ -65,3 +65,51 @@ AddEventHandler('playerDropped', function()
     quitting[source] = nil
     lastQuitTry[source] = nil
 end)
+
+-- Métiers ouverts (carte) : blips de qs-jobs-creator dont le métier a au moins un employé en service.
+-- Blips relus en base toutes les Refresh secondes, liste des métiers ouverts réutilisée 10 s.
+local jobCfg = (Config.Map or {}).ActiveJobs or {}
+local jobBlips, jobBlipsAt = {}, -1e9
+local activeJobs, activeJobsAt = {}, -1e9
+
+-- coords en JSON { x, y, z } ou texte « x, y, z » / vector3(x, y, z)
+local function parseCoords(raw)
+    local ok, t = pcall(json.decode, raw or '')
+    if ok and type(t) == 'table' and t.x and t.y then return tonumber(t.x), tonumber(t.y), tonumber(t.z) end
+    local n, text = {}, (tostring(raw):gsub('vector%d', ''))
+    for v in text:gmatch('-?%d+%.?%d*') do n[#n + 1] = tonumber(v) end
+    return n[1], n[2], n[3]
+end
+
+local function loadJobBlips()
+    local ok, rows = pcall(MySQL.query.await, 'SELECT job_name, coords FROM qs_jobs_data WHERE blip_id IS NOT NULL AND blip_id > 0')
+    if not ok then return end   -- table absente : qs-jobs-creator non installé
+    local list = {}
+    for _, r in ipairs(rows or {}) do
+        local x, y, z = parseCoords(r.coords)
+        if x and y then list[#list + 1] = { job = r.job_name, x = x, y = y, z = z } end
+    end
+    jobBlips = list
+end
+
+lib.callback.register('ash_pausemenu:activeJobs', function(src)
+    if jobCfg.Enabled == false or not QBCore.Functions.GetPlayer(src) then return nil end
+    local now = GetGameTimer()
+    if now - activeJobsAt > 10000 then
+        activeJobsAt = now
+        if now - jobBlipsAt > (jobCfg.Refresh or 300) * 1000 then
+            jobBlipsAt = now
+            loadJobBlips()
+        end
+        local onDuty, list = {}, {}
+        for _, p in pairs(QBCore.Functions.GetQBPlayers()) do
+            local job = p.PlayerData.job
+            if job and job.onduty then onDuty[job.name] = true end
+        end
+        for _, b in ipairs(jobBlips) do
+            if onDuty[b.job] then list[#list + 1] = { x = b.x, y = b.y, z = b.z } end
+        end
+        activeJobs = list
+    end
+    return activeJobs
+end)
