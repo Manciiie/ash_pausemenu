@@ -250,8 +250,6 @@ mark{background:rgba(139,92,246,.35);color:var(--text);border-radius:3px;padding
 .lg-sub{display:none}
 .lg-sub.on{display:block}
 .lg-empty{padding:12px;color:var(--muted);font-size:11px;text-align:center}
-#lmap .leaflet-route-pane path{filter:drop-shadow(0 0 4px rgba(139,92,246,.8))}
-#lmap .leaflet-route-pane path.broute{filter:drop-shadow(0 0 3px rgba(0,0,0,.7))}
 .job-on{pointer-events:none}
 .bedit{z-index:600;width:230px;box-sizing:border-box;flex-direction:column;align-items:stretch;gap:8px;padding:10px}
 .bedit b{font:700 12px Inter,sans-serif;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1307,12 +1305,26 @@ function openBlipEdit(p, pt){
   };
 }
 
+// Liste des métiers ouverts envoyée par le Lua après coup (la carte s'ouvre sans attendre le serveur)
+let jobsList = null;
+function setActiveJobs(list){
+  if (!Array.isArray(list)) return;
+  jobsList = list;
+  if (!mapInfo) return;
+  mapInfo.activeJobs = list;
+  renderBlips();
+  if (R3.on) build3d();
+}
+
 // Métiers ouverts, sauf ceux dont le blip est masqué dans la légende
 function activeJobs(){
   const list = mapInfo && Array.isArray(mapInfo.activeJobs) ? mapInfo.activeJobs : [];
   const off = allPlaces().filter(isHidden);
   return list.filter(j => !off.some(p => Math.hypot(p.x - j.x, p.y - j.y) < 8));
 }
+
+// petits points (blips non classés) d'abord, pour être dessinés sous les autres ; unknown vaut true ou undefined
+const byUnknownFirst = (a, b) => (b.unknown ? 1 : 0) - (a.unknown ? 1 : 0);
 
 function renderBlips(){
   if (!lmap) return;
@@ -1324,7 +1336,7 @@ function renderBlips(){
   activeJobs().forEach(j => L.marker(latlng(j.x, j.y), {interactive:false, keyboard:false, zIndexOffset:-100,
     icon:L.divIcon({className:'job-on', iconSize:[30, 30], html:'<i></i>'})}).addTo(jobLayer));
   // petits points d'abord, blips classés par-dessus
-  allPlaces().filter(p => !isHidden(p)).sort((a, b) => b.unknown - a.unknown).forEach(p => {
+  allPlaces().filter(p => !isHidden(p)).sort(byUnknownFirst).forEach(p => {
     const st = styleOf(p);
     const mk = p.unknown && !st
       ? L.circleMarker(latlng(p.x, p.y), {renderer:dotRenderer, radius:dotRadius(), color:'rgba(0,0,0,.55)', weight:1.5, fillColor:catOf(p.cat).color, fillOpacity:.9, bubblingMouseEvents:false})
@@ -1461,6 +1473,14 @@ function refreshRoute(){
     if (r && r.waypoint) setRoute(r.route || null);
   }), ms));
 }
+// Itinéraire = trait + halo plus large dessous. Remplace un filter: drop-shadow que le navigateur du jeu
+// recalculait à chaque déplacement ou zoom de la carte.
+function routeWithHalo(ll, color, halo, haloOpacity){
+  return L.layerGroup([
+    L.polyline(ll, {pane:'route', color:halo, weight:10, opacity:haloOpacity, interactive:false}),
+    L.polyline(ll, {pane:'route', color, weight:4.5, opacity:.95, interactive:false}),
+  ]).addTo(lmap);
+}
 function setRoute(pts){
   routePts = Array.isArray(pts) && pts.length >= 6 ? pts : null;
   if (lmap) {
@@ -1468,7 +1488,7 @@ function setRoute(pts){
     if (routePts) {
       const ll = [];
       for (let i = 0; i + 2 < routePts.length; i += 3) ll.push(latlng(routePts[i], routePts[i + 1]));
-      routeLine = L.polyline(ll, {pane:'route', color:'#c4b0ff', weight:4.5, opacity:.95, interactive:false}).addTo(lmap);
+      routeLine = routeWithHalo(ll, '#c4b0ff', '#8b5cf6', .4);
     }
   }
   if (R3.on) draw3d();
@@ -1480,7 +1500,7 @@ function setBlipRoute(r){
     if (bRoute) {
       const ll = [];
       for (let i = 0; i + 2 < bRoute.pts.length; i += 3) ll.push(latlng(bRoute.pts[i], bRoute.pts[i + 1]));
-      bRouteLine = L.polyline(ll, {pane:'route', color:bRoute.color, weight:4.5, opacity:.95, interactive:false, className:'broute'}).addTo(lmap);
+      bRouteLine = routeWithHalo(ll, bRoute.color, '#000', .35);
     }
   }
   const gl = $('r3bgl'), ln = $('r3bln');
@@ -1501,6 +1521,7 @@ function openMap(){
   requestAnimationFrame(() => lmap.invalidateSize());
   post('mapData').then(r => {
     if (!r || !r.me) return;
+    if (!Array.isArray(r.activeJobs) && jobsList) r.activeJobs = jobsList;   // liste arrivée avant la réponse
     mapInfo = r;
     $('mStreet').textContent = r.street || '—';
     setWhere(r);
@@ -1567,7 +1588,7 @@ function build3d(){
     return m;
   };
   if (blipsOn) activeJobs().forEach(j => add('act', '<i class="ring"></i>', j.x, j.y, j.z, 6, '', null));
-  if (blipsOn) allPlaces().filter(p => !isHidden(p)).sort((a, b) => b.unknown - a.unknown).forEach(p => {
+  if (blipsOn) allPlaces().filter(p => !isHidden(p)).sort(byUnknownFirst).forEach(p => {
     const st = styleOf(p), n = st && st.size, h = n / 2;
     const dim = n ? `;width:${n}px;height:${n}px;left:${-h}px;top:${-h}px` : '';
     add(p.unknown ? 'dot' : '', `<i class="sq${st && st.shape ? ' sh-' + st.shape : ''}" style="background:${esc(catOf(p.cat).color)}${dim}"></i><i class="st"${n ? ` style="top:${h}px"` : ''}></i>`,
@@ -2029,6 +2050,7 @@ window.addEventListener('message', ({data: m}) => {
   else if (m.action === 'vipdaily') setVipDaily(m.etat);
   else if (m.action === 'headshot') setHeadshot(m.txd);
   else if (m.action === 'cal3d') cal3d(m);
+  else if (m.action === 'activeJobs') setActiveJobs(m.list);
 });
 </script>
 </body>

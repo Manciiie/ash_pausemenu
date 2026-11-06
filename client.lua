@@ -457,10 +457,12 @@ local function r10(v) return math.floor(v * 10 + 0.5) / 10 end
 -- Itinéraire GPS en points {x, y, z, x, y, z, ...} (une centaine au plus).
 -- slot : 0 = vers le point GPS, 1 = route d'un blip (SetBlipRoute : taxi, missions, jobs…)
 local function routePoints(slot)
-    local len = GetGpsBlipRouteLength()
-    local step = len and len > 0 and math.max(15.0, len / 150) or 40.0
+    -- GetGpsBlipRouteLength ne mesure que la route du point GPS : pour la route d'un blip, pas fixe de 40 m
+    -- et jusqu'à 400 points (16 km, plus que la traversée de la carte) pour ne pas couper un long trajet
+    local len = slot == 0 and GetGpsBlipRouteLength() or 0
+    local step = len > 0 and math.max(15.0, len / 150) or 40.0
     local pts, last, d = {}, nil, 0.0
-    for _ = 1, 200 do
+    for _ = 1, slot == 0 and 200 or 400 do
         local ok, p = GetPosAlongGpsTypeRoute(true, d, slot)
         if not ok or (last and #(p - last) < 1.0) then break end   -- fin de l'itinéraire
         pts[#pts + 1], pts[#pts + 2], pts[#pts + 3] = r10(p.x), r10(p.y), r10(p.z)
@@ -474,26 +476,55 @@ local function gpsRoute()
     return routePoints(0)
 end
 
--- Route posée par un script sur un blip : tracé + couleur du blip qui la porte (cherché seulement s'il y a une route)
-local function blipRoute()
-    local pts = routePoints(1)
-    if not pts then return nil end
-    local color
+-- Route posée par un script sur un blip : tracé + couleur du blip qui la porte (cherché seulement s'il y a une route).
+-- Le blip trouvé est gardé : aux ouvertures suivantes on le revérifie seul au lieu de reparcourir les ~970 sprites.
+local routeBlip = nil
+
+local function findRouteBlip()
+    if routeBlip and DoesBlipExist(routeBlip) and DoesBlipHaveGpsRoute(routeBlip) then return routeBlip end
+    routeBlip = nil
     for sprite = 1, SPRITE_MAX do
         if sprite ~= 8 then
             local blip = GetFirstBlipInfoId(sprite)
             while DoesBlipExist(blip) do
                 if DoesBlipHaveGpsRoute(blip) then
-                    local r, g, b = GetHudColour(GetBlipHudColour(blip))
-                    color = ('#%02x%02x%02x'):format(r, g, b)
-                    break
+                    routeBlip = blip
+                    return blip
                 end
                 blip = GetNextBlipInfoId(sprite)
             end
-            if color then break end
         end
     end
+end
+
+local function blipRoute()
+    local pts = routePoints(1)
+    if not pts then return nil end
+    local color
+    local blip = findRouteBlip()
+    if blip then
+        local r, g, b = GetHudColour(GetBlipHudColour(blip))
+        color = ('#%02x%02x%02x'):format(r, g, b)
+    end
     return { pts = pts, color = color }
+end
+
+-- Métiers ouverts : gardés 10 s côté client ; sinon demandés au serveur sans bloquer l'ouverture de la carte
+local jobsCache, jobsCacheAt, jobsPending = nil, -1e9, false
+
+local function cachedActiveJobs()
+    if (mapCfg.ActiveJobs or {}).Enabled == false then return nil end
+    if jobsCache and GetGameTimer() - jobsCacheAt < 10000 then return jobsCache end
+    if not jobsPending then
+        jobsPending = true
+        lib.callback('ash_pausemenu:activeJobs', false, function(list)
+            jobsPending = false
+            if type(list) ~= 'table' then return end
+            jobsCache, jobsCacheAt = list, GetGameTimer()
+            if isOpen then SendNUIMessage({ action = 'activeJobs', list = list }) end
+        end)
+    end
+    return jobsCache   -- dernière liste connue (ou nil) en attendant la réponse
 end
 
 local function waypointCoords()
@@ -509,7 +540,7 @@ onNui('mapData', function(_, cb)
     local s1, s2 = GetStreetNameAtCoord(c.x, c.y, c.z)
     local street = GetStreetNameFromHashKey(s1)
     if s2 ~= 0 then street = street .. ' / ' .. GetStreetNameFromHashKey(s2) end
-    local activeJobs = (mapCfg.ActiveJobs or {}).Enabled ~= false and lib.callback.await('ash_pausemenu:activeJobs', false) or nil
+    local activeJobs = cachedActiveJobs()
 
     cb({
         me       = { x = c.x, y = c.y, z = c.z, heading = heading },

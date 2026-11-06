@@ -92,6 +92,14 @@ local function loadJobBlips()
     jobBlips = list
 end
 
+-- lecture des blips dès que la base est prête : la première ouverture de carte n'attend pas la requête SQL
+if jobCfg.Enabled ~= false then
+    MySQL.ready(function()
+        jobBlipsAt = GetGameTimer()
+        loadJobBlips()
+    end)
+end
+
 lib.callback.register('ash_pausemenu:activeJobs', function(src)
     if jobCfg.Enabled == false or not QBCore.Functions.GetPlayer(src) then return nil end
     local now = GetGameTimer()
