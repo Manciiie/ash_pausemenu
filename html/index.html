@@ -1943,11 +1943,24 @@ function closeModal(){ if (busy) return; resetHold(); modal.classList.remove('sh
 const modalOpen = () => modal.classList.contains('show');
 
 function resetHold(){ cancelAnimationFrame(holdRaf); holding = false; $('fill').style.width = '0%'; }
-function startHold(){
+// Le maintien doit être continu : si le jeu fige ou si l'interface perd le focus pendant le maintien,
+// le relâchement peut ne jamais arriver. Un trou de plus de 250 ms entre deux images annule donc le maintien,
+// au lieu de déconnecter le joueur d'un coup à la reprise.
+const HOLD_MAX_GAP = 250;
+function startHold(e){
   if (busy || holding) return;
+  if (e && e.type === 'mousedown' && e.button !== 0) return;
   holding = true; $('err').textContent = '';
   holdStart = performance.now();
+  let last = holdStart;
   const step = t => {
+    if (!holding) return;
+    if (t - last > HOLD_MAX_GAP) {
+      resetHold();
+      $('err').textContent = 'Maintien interrompu : maintiens à nouveau pour quitter.';
+      return;
+    }
+    last = t;
     const p = Math.min(1, (t - holdStart) / (cfg.hold || 1500));
     $('fill').style.width = (p * 100) + '%';
     if (p >= 1) { doQuit(); return; }
@@ -1975,6 +1988,10 @@ const qb = $('quitBtn');
 qb.addEventListener('mousedown', startHold);
 qb.addEventListener('mouseup', stopHold);
 qb.addEventListener('mouseleave', stopHold);
+// relâchement hors du bouton, interface qui perd le focus ou se masque : le maintien s'arrête
+window.addEventListener('mouseup', stopHold);
+window.addEventListener('blur', stopHold);
+document.addEventListener('visibilitychange', () => { if (document.hidden) stopHold(); });
 $('cancel').addEventListener('click', closeModal);
 
 /* ---------- Souris ---------- */
