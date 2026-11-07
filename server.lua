@@ -19,6 +19,10 @@ end)
 
 local lastQuitTry = {}
 
+-- Dimension (routing bucket) propre à chaque joueur qui quitte, et attente avant l'expulsion (ms)
+local ISOLEMENT_BUCKET = 900000
+local ISOLEMENT_DELAI  = 1500
+
 lib.callback.register('ash_pausemenu:quit', function(src)
     if quitting[src] then return true end
 
@@ -52,10 +56,19 @@ lib.callback.register('ash_pausemenu:quit', function(src)
     -- petit délai pour que la réponse arrive à la NUI ("Déconnexion…") avant le drop.
     -- qb-core sauvegarde le joueur sur playerDropped, et ash_leaveped réagit normalement.
     SetTimeout(400, function()
-        if GetPlayerName(src) then
-            DropPlayer(src, Config.QuitMessage)
+        if not GetPlayerName(src) then
+            quitting[src] = nil
+            return
         end
-        quitting[src] = nil
+        -- Le joueur passe seul dans une dimension à part avant l'expulsion : son personnage sort de la vue
+        -- des joueurs proches comme s'il s'éloignait, au lieu de disparaître d'un coup (crash possible chez eux).
+        SetPlayerRoutingBucket(src, ISOLEMENT_BUCKET + src)
+        SetTimeout(ISOLEMENT_DELAI, function()
+            if GetPlayerName(src) then
+                DropPlayer(src, Config.QuitMessage)
+            end
+            quitting[src] = nil
+        end)
     end)
 
     return true
