@@ -113,7 +113,7 @@ local function vipDailyActif()
     return vd.Ressource and vd.Ressource ~= '' and GetResourceState(vd.Ressource) == 'started'
 end
 
--- Récupère l'état du jour auprès d'ash_vipdaily (son callback serveur vérifie tout),
+-- Récupère le résumé du jour auprès d'ash_vipdaily (appel léger, v2.0.1 ou plus),
 -- avec un petit cache pour ne pas interroger le serveur à chaque ÉCHAP
 local function sendVipDaily()
     local now = GetGameTimer()
@@ -121,7 +121,7 @@ local function sendVipDaily()
         SendNUIMessage({ action = 'vipdaily', etat = vipCache })
         return
     end
-    lib.callback('ash_vipdaily:server:ouvrir', false, function(d)
+    lib.callback('ash_vipdaily:server:resume', false, function(d)
         if type(d) ~= 'table' then return end
         vipCache = {
             vip        = d.vip == true,

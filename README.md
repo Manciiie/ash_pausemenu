@@ -22,7 +22,7 @@ Remplace le menu pause GTA (ÉCHAP, et P en option) par un menu au thème ASH.
 - Onglet **Règlement** avec recherche (insensible aux accents) et onglet **Touches**
 - **Mode streamer** : masque nom RP, ID et CitizenID ; mémorisé par joueur
 - **Signaler / Report** : ouvre le report de Luxu Admin (commande configurable)
-- **Récompense VIP** (ash_vipdaily) : carte dans l'Aperçu (disponible, temps avant la prochaine, série, réservé aux VIP) ; un clic place le point GPS sur le PNJ des récompenses (ash_vipdaily v1.4.1 ou plus) ; masquée si la ressource n'est pas démarrée
+- **Récompense VIP** (ash_vipdaily) : carte dans l'Aperçu (disponible, temps avant la prochaine, série, réservé aux VIP) ; un clic place le point GPS sur le PNJ des récompenses (ash_vipdaily v1.4.1 ou plus ; résumé léger lu depuis la v2.0.1) ; masquée si la ressource n'est pas démarrée
 - Liens **Discord** et **Boutique VIP**
 - **Quitter la session** : confirmation par maintien, refusée si menotté / à terre / mort, anti-spam
 
