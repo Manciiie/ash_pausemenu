@@ -510,15 +510,18 @@ local function blipRoute()
 end
 
 -- Métiers ouverts : gardés 10 s côté client ; sinon demandés au serveur sans bloquer l'ouverture de la carte
-local jobsCache, jobsCacheAt, jobsPending = nil, -1e9, false
+-- jobsAskedAt : heure de la demande en cours (nil = aucune). Une demande restée sans réponse 15 s est
+-- relancée : un serveur qui ne répond pas une fois ne fige plus les anneaux jusqu'au redémarrage.
+local jobsCache, jobsCacheAt, jobsAskedAt = nil, -1e9, nil
 
 local function cachedActiveJobs()
     if (mapCfg.ActiveJobs or {}).Enabled == false then return nil end
-    if jobsCache and GetGameTimer() - jobsCacheAt < 10000 then return jobsCache end
-    if not jobsPending then
-        jobsPending = true
+    local now = GetGameTimer()
+    if jobsCache and now - jobsCacheAt < 10000 then return jobsCache end
+    if not jobsAskedAt or now - jobsAskedAt > 15000 then
+        jobsAskedAt = now
         lib.callback('ash_pausemenu:activeJobs', false, function(list)
-            jobsPending = false
+            jobsAskedAt = nil
             if type(list) ~= 'table' then return end
             jobsCache, jobsCacheAt = list, GetGameTimer()
             if isOpen then SendNUIMessage({ action = 'activeJobs', list = list }) end

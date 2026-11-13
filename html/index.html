@@ -656,10 +656,17 @@ function tick(){
 
 /* ---------- Règlement / touches ---------- */
 function highlight(text, q){
-  const safe = esc(text);
-  if (!q) return safe;
-  const re = new RegExp('(' + esc(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-  return safe.replace(re, '<mark>$1</mark>');
+  // recherche dans le texte brut puis échappement morceau par morceau : chercher « 39 » ne casse plus un &#39;
+  text = String(text == null ? '' : text);
+  if (!q) return esc(text);
+  const re = new RegExp(String(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+  let out = '', last = 0, m;
+  while ((m = re.exec(text))) {
+    if (!m[0]) { re.lastIndex++; continue; }
+    out += esc(text.slice(last, m.index)) + '<mark>' + esc(m[0]) + '</mark>';
+    last = m.index + m[0].length;
+  }
+  return out + esc(text.slice(last));
 }
 const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
@@ -966,7 +973,7 @@ function buildTile(job, ly){
 }
 
 // Tuiles finies gardées en mémoire (JPEG, quelques dizaines de Ko) : revenir sur une zone ne refait rien
-const TILE_MAX = 400, tileCache = new Map(), tilePending = new Map();
+const TILE_MAX = 400, tileCache = new Map(), tilePending = new Map(), tileTemp = new Set();
 function getTile(o, coords){
   const key = o.ly.layer + '/' + coords.z + '/' + coords.x + '/' + coords.y;
   const hit = tileCache.get(key);
@@ -980,6 +987,7 @@ function getTile(o, coords){
     if (inWorld) o.onLand(!r.fail);
     if (!r.blob) return null;
     const url = URL.createObjectURL(r.blob);
+    if (r.fail) tileTemp.add(url);   // pas gardée en cache : libérée une fois affichée (voir createTile)
     if (!r.fail) {   // une tuile dont la terre n'a pas chargé n'est pas gardée : elle sera retentée
       tileCache.set(key, url);
       if (tileCache.size > TILE_MAX) {
@@ -989,7 +997,7 @@ function getTile(o, coords){
       }
     }
     return url;
-  });
+  }).catch(() => { tilePending.delete(key); return null; });   // fabrication ratée : la tuile sera retentée
   tilePending.set(key, p);
   return p;
 }
@@ -1013,8 +1021,10 @@ const MapTiles = () => L.GridLayer.extend({
     img.style.width = (s.x + 4) + 'px'; img.style.height = (s.y + 4) + 'px';
     getTile(this.options, coords).then(url => {
       if (!url) return done(new Error('tuile'), img);
-      img.onload = () => done(null, img);
-      img.onerror = () => done(new Error('tuile'), img);
+      // image d'une tuile en échec : libérée après affichage (délai : la même adresse peut servir à deux images)
+      const free = () => { if (tileTemp.has(url)) setTimeout(() => { if (tileTemp.delete(url)) URL.revokeObjectURL(url); }, 3000); };
+      img.onload = () => { done(null, img); free(); };
+      img.onerror = () => { done(new Error('tuile'), img); free(); };
       img.src = url;
     });
     return img;
@@ -1048,8 +1058,9 @@ function setLayer(id){
   const fb = m.tilesFallback;
   tileLayer = new TileClass({ly:layerDefs[id], url:m.tiles.replace('{layer}', id), fallback:fb && fb.replace('{layer}', id), sat:id === 'satellite',
       onLand: ok => {
-        if (ok) { loaded++; $('moff').classList.remove('on'); }
-        else if (++failed > 6 && !loaded) $('moff').classList.add('on');
+        if (ok) { loaded++; $('moff').classList.remove('on'); $('mbar').style.zIndex = ''; }
+        // boutons Atlas / Satellite gardés au-dessus du panneau : on peut revenir à un calque qui marche
+        else if (++failed > 6 && !loaded) { $('moff').classList.add('on'); $('mbar').style.zIndex = 610; }
       },
       minZoom:0, maxZoom:5, maxNativeZoom:5, noWrap:true, bounds, keepBuffer:2, updateWhenZooming:false})
     .addTo(lmap);
@@ -1132,7 +1143,7 @@ function allPlaces(){
     if (b.unknown && data.map.showUnknown === false) return;
     list.push({x:b.x, y:b.y, z:b.z, cat:b.cat, label:b.label || catOf(b.cat).label, unknown:!!b.unknown});
   });
-  (data.map.places || []).forEach(p => list.push({x:+p.x, y:+p.y, z:p.z != null ? +p.z : undefined, cat:p.cat || 'poi', label:p.label}));
+  (data.map.places || []).forEach(p => list.push({x:+p.x, y:+p.y, z:p.z != null ? +p.z : undefined, cat:p.cat || 'poi', label:p.label || catOf(p.cat || 'poi').label}));
   return list;
 }
 
@@ -1276,6 +1287,7 @@ function applyBlipEdit(){
   renderBlips();
 }
 function openBlipEdit(p, pt){
+  if (edit) blipStyles = readStyles();   // essai non enregistré sur un autre blip : abandonné
   const box = $('bedit'), cur = styleOf(p);
   edit = {p, all:false, style:{size:(cur && cur.size) || BLIP_SIZE, shape:(cur && cur.shape) || 'carre'}};
   box.innerHTML = `<b>${esc(p.label)}</b>
@@ -1299,8 +1311,10 @@ function openBlipEdit(p, pt){
   $('beCancel').onclick = () => closeBlipEdit(false);
   $('beReset').onclick = () => {
     blipStyles = readStyles();
+    const own = blipStyles.one[placeKey(p)];
     delete blipStyles.one[placeKey(p)];
-    delete blipStyles.type[typeKey(p)];
+    // style du type entier : retiré seulement si la case est cochée, ou si ce blip n'avait pas de style à lui
+    if (edit.all || !own) delete blipStyles.type[typeKey(p)];
     closeBlipEdit(true);
   };
 }
@@ -1830,7 +1844,7 @@ function moveResult(dir){
 }
 function pickResult(i){
   const p = results[i];
-  if (!p) return;
+  if (!p || !lmap) return;
   lmap.setView(latlng(p.x, p.y), Math.max(lmap.getZoom(), 4));
   setWaypoint(p.x, p.y, true, p.label);
   msearch.value = ''; results = []; showResults(false); msearch.blur();
@@ -1911,6 +1925,8 @@ function hide(){
   app.classList.remove('show');
   busy = false; closeModal(); closeView();
   clearInterval(ticker);
+  routeTimers.forEach(clearTimeout); routeTimers = [];
+  jobsList = null;   // liste des métiers redemandée à la prochaine ouverture
 }
 
 function run(action){
@@ -2007,6 +2023,9 @@ $('kVip').addEventListener('click', () => {
 });
 $('resumeBig').addEventListener('click', () => run('resume'));
 
+// Un bouton cliqué à la souris ne garde pas le focus : sinon Entrée ou Espace le redéclenchent en plus de l'action au clavier
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('button'); if (b) b.blur(); });
+
 /* ---------- Clavier ---------- */
 window.addEventListener('keydown', e => {
   if (!open) return;
@@ -2022,22 +2041,27 @@ window.addEventListener('keydown', e => {
     else if (typing && search.value) { search.value = ''; renderRules(); }
     else if (typingMap && msearch.value) { msearch.value = ''; renderResults(); }
     else if (typingMap) msearch.blur();
+    else if (edit) closeBlipEdit(false);   // panneau de style : ÉCHAP l'annule sans quitter la carte
     else if (currentView) closeView();
     else post('close');
     return;
   }
-  if (modalOpen()) { if (e.key === 'Enter' && !e.repeat) startHold(); return; }
+  if (modalOpen()) { if (e.key === 'Enter') { e.preventDefault(); if (!e.repeat) startHold(); } return; }
+  if (edit && $('bedit').contains(document.activeElement)) return;   // panneau de style : flèches et Entrée lui restent
   if (typingMap) {
     if (e.key === 'ArrowDown') { e.preventDefault(); moveResult(1); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); moveResult(-1); }
     else if (e.key === 'Enter') pickResult(resSel);
     return;
   }
-  if (typing) { if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') search.blur(); else return; }
+  if (typing) {
+    if (e.key === 'Enter') { search.blur(); return; }   // Entrée valide la recherche, pas le bouton du menu
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') search.blur(); else return;
+  }
 
   if (e.key === 'ArrowDown') { e.preventDefault(); select(sel + 1); }
   else if (e.key === 'ArrowUp') { e.preventDefault(); select(sel - 1); }
-  else if (e.key === 'Enter') run(buttons()[sel].dataset.action);
+  else if (e.key === 'Enter') { e.preventDefault(); run(buttons()[sel].dataset.action); }   // pas de second clic sur le bouton qui a le focus
   else if (currentView === 'rules' && /^[a-zà-ÿ]$/i.test(e.key) && !e.ctrlKey && !e.altKey) {
     // taper = rechercher : on insère nous-mêmes la 1re lettre (sinon elle est perdue pendant le changement de focus)
     e.preventDefault();
@@ -2045,8 +2069,8 @@ window.addEventListener('keydown', e => {
     search.value += e.key;
     renderRules();
   }
-  else if (currentView === 'map' && (/^[a-zà-ÿ]$/i.test(e.key) || e.key === '/') && !e.ctrlKey && !e.altKey) {
-    // taper = rechercher un lieu sur la carte
+  else if (currentView === 'map' && (/^[a-zà-ÿ0-9]$/i.test(e.key) || e.key === '/') && !e.ctrlKey && !e.altKey) {
+    // taper = rechercher un lieu ou un code postal sur la carte (les chiffres ne sont plus des raccourcis ici)
     e.preventDefault();
     msearch.focus();
     if (e.key !== '/') { msearch.value += e.key; renderResults(); }

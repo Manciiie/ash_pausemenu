@@ -62,6 +62,10 @@ lib.callback.register('ash_pausemenu:quit', function(src)
         end
         -- Le joueur passe seul dans une dimension à part avant l'expulsion : son personnage sort de la vue
         -- des joueurs proches comme s'il s'éloignait, au lieu de disparaître d'un coup (crash possible chez eux).
+        -- ash_dclogs : départ volontaire (et non "kick"), à signaler avant le changement de dimension
+        if GetResourceState('ash_dclogs') == 'started' then
+            pcall(function() exports.ash_dclogs:SetDropReason(src, 'A quitté via le menu pause', 'quit') end)
+        end
         SetPlayerRoutingBucket(src, ISOLEMENT_BUCKET + src)
         SetTimeout(ISOLEMENT_DELAI, function()
             if GetPlayerName(src) then
