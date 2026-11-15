@@ -284,14 +284,27 @@ end
 local r3d = nil   -- { cam, pose } tant que la vue réaliste est affichée
 
 -- HUD d'autres ressources masqués pendant la vue (Config.Map.Realistic.HideHuds : ressource = export(show))
+-- Sans réglage (ancien config.lua resté sur le serveur), jg-hud est masqué par défaut.
+local HUDS_DEFAUT = { ['jg-hud'] = 'toggleHud' }
+local hudErreurs = {}   -- une erreur d'export n'est écrite qu'une fois dans F8
+
 local function toggleOtherHuds(show)
-    local huds = ((Config.Map or {}).Realistic or {}).HideHuds or {}
+    local huds = ((Config.Map or {}).Realistic or {}).HideHuds or HUDS_DEFAUT
     for res, fn in pairs(huds) do
         if GetResourceState(res) == 'started' then
             local ok, err = pcall(function() local e = exports[res]; e[fn](e, show) end)   -- = exports[res]:fn(show)
-            if not ok then print(('^3[%s] %s:%s a échoué : %s^0'):format(GetCurrentResourceName(), res, fn, tostring(err))) end
+            if not ok and not hudErreurs[res] then
+                hudErreurs[res] = true
+                print(('^3[%s] %s:%s a échoué : %s^0'):format(GetCurrentResourceName(), res, fn, tostring(err)))
+            end
         end
     end
+end
+
+-- Nuages : vus d'en haut ils cachent la ville. Rendus transparents pendant la vue, remis en sortant.
+local function setClouds(visible)
+    if ((Config.Map or {}).Realistic or {}).HideClouds == false then return end
+    SetCloudsAlpha(visible and 1.0 or 0.0)
 end
 
 local function stop3d()
@@ -299,6 +312,7 @@ local function stop3d()
     local cam = r3d.cam
     r3d = nil
     toggleOtherHuds(true)
+    setClouds(true)
     RenderScriptCams(false, false, 0, true, true)
     SetCamActive(cam, false)
     DestroyCam(cam, false)
@@ -664,10 +678,19 @@ onNui('map3d', function(data, cb)
         end
     end)
 
-    -- tant que la vue est ouverte : pas de HUD ni de minimap par-dessus la ville
+    -- tant que la vue est ouverte : pas de HUD ni de minimap par-dessus la ville.
+    -- Les HUD des autres ressources et les nuages sont remasqués toutes les 500 ms : un HUD qui se
+    -- réaffiche tout seul (montée en véhicule, changement d'état) ne reste pas par-dessus la carte.
     CreateThread(function()
+        local nextHide = 0
         while r3d and r3d.cam == cam do
             HideHudAndRadarThisFrame()
+            local now = GetGameTimer()
+            if now >= nextHide then
+                nextHide = now + 500
+                toggleOtherHuds(false)
+                setClouds(false)
+            end
             Wait(0)
         end
     end)

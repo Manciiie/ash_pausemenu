@@ -172,6 +172,8 @@ Config.Map = {
         HideHuds = {
             ['jg-hud'] = 'toggleHud',
         },
+        -- Nuages rendus transparents pendant la vue (vus d'en haut ils cachent la ville). false = nuages gardés.
+        HideClouds = true,
     },
 
     -- Codes postaux écrits sur la carte plane (bouton « Postaux »), cherchables par numéro dans la recherche,
