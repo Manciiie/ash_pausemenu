@@ -263,9 +263,9 @@ mark{background:rgba(139,92,246,.35);color:var(--text);border-radius:3px;padding
 .r3-mk .sq.sh-losange{border:0;border-radius:0;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
 .r3-mk .sq.sh-triangle{border:0;border-radius:0;clip-path:polygon(50% 0,100% 100%,0 100%)}
 .r3-mk .sq.sh-hexagone{border:0;border-radius:0;clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)}
-.job-on i,.r3-mk.act .ring{position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;border:2px solid #34d399;box-shadow:0 0 8px rgba(52,211,153,.8);animation:jobPulse 1.8s ease-out infinite}
-.r3-mk.act{pointer-events:none}
-.r3-mk.act .ring{left:0;top:0}
+.job-on i,.r3-mk.r3act .ring{position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;border:2px solid #34d399;box-shadow:0 0 8px rgba(52,211,153,.8);animation:jobPulse 1.8s ease-out infinite}
+.r3-mk.r3act{pointer-events:none}
+.r3-mk.r3act .ring{left:0;top:0}
 @keyframes jobPulse{0%{transform:scale(.7);opacity:1}100%{transform:scale(1.5);opacity:0}}
 
 /* ---------- Carte réaliste : la caméra du jeu au-dessus de la ville, marqueurs posés par-dessus ---------- */
@@ -290,8 +290,8 @@ body.r3d #app{opacity:0;visibility:hidden;transition:none}
 .r3-mk.nl .lb{display:none}
 .r3-mk:hover{z-index:200000!important}
 .r3-mk:hover .lb{display:block}
-.r3-mk.me{cursor:default}
-.r3-mk.me .sq{left:-9px;top:-9px;width:18px;height:18px;border-radius:50%;background:#b49cff;border:3px solid #fff;box-shadow:0 0 0 6px rgba(139,92,246,.35),0 3px 8px rgba(0,0,0,.5)}
+.r3-mk.r3me{cursor:default}
+.r3-mk.r3me .sq{left:-9px;top:-9px;width:18px;height:18px;border-radius:50%;background:#b49cff;border:3px solid #fff;box-shadow:0 0 0 6px rgba(139,92,246,.35),0 3px 8px rgba(0,0,0,.5)}
 .r3-mk.wp{cursor:default}
 .r3-mk.wp svg{position:absolute;left:-14px;top:-36px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
 .r3-title{top:14px;left:14px;gap:10px;padding:6px 14px 6px 6px}
@@ -1599,6 +1599,8 @@ function build3d(){
   const box = $('r3marks'), me = mapInfo.me;
   box.textContent = '';
   R3.marks = [];
+  // classes propres à la vue (r3act, r3me) : « act » et « me » sont déjà des styles du menu (boutons, carte du joueur)
+  // et transformaient ces marqueurs en cadres arrondis en travers de l'écran
   const add = (cls, html, x, y, z, lift, label, onClick) => {
     const el = document.createElement('div');
     el.className = 'r3-mk' + (cls ? ' ' + cls : '');
@@ -1610,7 +1612,7 @@ function build3d(){
     R3.marks.push(m);
     return m;
   };
-  if (blipsOn) activeJobs().forEach(j => add('act', '<i class="ring"></i>', j.x, j.y, j.z, 6, '', null));
+  if (blipsOn) activeJobs().forEach(j => add('r3act', '<i class="ring"></i>', j.x, j.y, j.z, 6, '', null));
   if (blipsOn) allPlaces().filter(p => !isHidden(p)).sort(byUnknownFirst).forEach(p => {
     const st = styleOf(p), n = st && st.size, h = n / 2;
     const dim = n ? `;width:${n}px;height:${n}px;left:${-h}px;top:${-h}px` : '';
@@ -1618,7 +1620,7 @@ function build3d(){
       p.x, p.y, p.z, 6, p.label, () => setWaypoint(p.x, p.y, true, p.label));
   });
   R3.wp = add('wp', WP_SVG, 0, 0, null, 0, '', null);
-  add('me', '<i class="sq"></i>', me.x, me.y, me.z, 1.5, '', null);
+  add('r3me', '<i class="sq"></i>', me.x, me.y, me.z, 1.5, '', null);
   draw3d();
   requestHeights();
 }
