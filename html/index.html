@@ -255,10 +255,10 @@ mark{background:rgba(139,92,246,.35);color:var(--text);border-radius:3px;padding
 .bedit b{font:700 12px Inter,sans-serif;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bedit label{display:flex;align-items:center;gap:8px;font:600 11px Inter,sans-serif;color:var(--text)}
 .bedit input[type=range]{flex:1;min-width:0;accent-color:#8b5cf6}
-.bedit .shp,.bedit .act{display:flex;gap:4px}
+.bedit .shp,.bedit .be-act{display:flex;gap:4px}
 .bedit button{flex:1;min-width:0;height:28px;padding:0 4px;border-radius:8px;border:1px solid var(--line2);background:none;color:var(--text);font:600 11px Inter,sans-serif;cursor:pointer}
 .bedit button:hover{background:rgba(255,255,255,.06)}
-.bedit .shp button.on,.bedit .act .ok{background:rgba(139,92,246,.25);border-color:rgba(139,92,246,.55);color:#fff}
+.bedit .shp button.on,.bedit .be-act .ok{background:rgba(139,92,246,.25);border-color:rgba(139,92,246,.55);color:#fff}
 .r3-mk .sq.sh-rond{border-radius:50%}
 .r3-mk .sq.sh-losange{border:0;border-radius:0;clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
 .r3-mk .sq.sh-triangle{border:0;border-radius:0;clip-path:polygon(50% 0,100% 100%,0 100%)}
@@ -1294,8 +1294,8 @@ function openBlipEdit(p, pt){
     <label>Taille <input type="range" min="6" max="28" step="1" value="${edit.style.size}" id="beSize"><span id="beVal">${edit.style.size}</span></label>
     <div class="shp">${SHAPES.map(([id, l, g]) => `<button data-shape="${id}" title="${l}" class="${id === edit.style.shape ? 'on' : ''}">${g}</button>`).join('')}</div>
     <label><input type="checkbox" id="beAll"> Tous les « ${esc(p.label)} »</label>
-    <div class="act"><button class="ok" id="beSave">Enregistrer</button><button id="beCancel">Annuler</button></div>
-    <div class="act"><button id="beReset">Réinitialiser</button></div>`;
+    <div class="be-act"><button class="ok" id="beSave">Enregistrer</button><button id="beCancel">Annuler</button></div>
+    <div class="be-act"><button id="beReset">Réinitialiser</button></div>`;
   box.style.display = 'flex';
   const W = box.parentElement.clientWidth, H = box.parentElement.clientHeight, x = pt.x + 14, y = pt.y - 20;
   box.style.left = Math.max(8, Math.min(x, W - box.offsetWidth - 8)) + 'px';
@@ -1799,7 +1799,7 @@ window.addEventListener('mousemove', e => {
   } else {
     // mètres par pixel au point visé ; en vue penchée le sol fuit, on avance plus vite en profondeur
     const R = 2 * o.dist * Math.tan(o.fov * D2R / 2) / innerHeight / R3.scale, U = 1 / Math.max(.45, Math.sin(o.p * D2R)), h = o.h * D2R;
-    o.tx = clamp(o.tx - Math.cos(h) * dx * R - Math.sin(h) * dy * R * U, -4500, 6500);
+    o.tx = clamp(o.tx - Math.cos(h) * dx * R - Math.sin(h) * dy * R * U, -7500, 6500);   // -7500 : île de l'ouest (kq_coca_3, x = -6300)
     o.ty = clamp(o.ty - Math.sin(h) * dx * R + Math.cos(h) * dy * R * U, -7000, 8500);
   }
   send3d();

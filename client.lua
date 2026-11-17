@@ -311,7 +311,8 @@ local function stop3d()
     if not r3d then return end
     local cam = r3d.cam
     r3d = nil
-    toggleOtherHuds(true)
+    -- ShowHudsOnExit = false : HUD laissé caché en sortant (serveur où il est masqué par un autre script)
+    if ((Config.Map or {}).Realistic or {}).ShowHudsOnExit ~= false then toggleOtherHuds(true) end
     setClouds(true)
     RenderScriptCams(false, false, 0, true, true)
     SetCamActive(cam, false)

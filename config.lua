@@ -172,6 +172,8 @@ Config.Map = {
         HideHuds = {
             ['jg-hud'] = 'toggleHud',
         },
+        -- HUD réaffichés en sortant de la vue. false = laissés cachés (à remettre par le script qui les gère).
+        ShowHudsOnExit = true,
         -- Nuages rendus transparents pendant la vue (vus d'en haut ils cachent la ville). false = nuages gardés.
         HideClouds = true,
     },
