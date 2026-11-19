@@ -11,7 +11,7 @@ Remplace le menu pause GTA (ÉCHAP, et P en option) par un menu au thème ASH.
 - **Cayo Perico sur la carte GTA native** : l'île s'affiche dans le menu pause GTA (bouton « Carte GTA ») et la minimap passe sur la carte de l'île à moins de 2,2 km. Réglages dans `Config.CayoNative`
 - **Bouton « Blips »** (carte plane et réaliste) : masque ou réaffiche tous les blips d'un clic, mémorisé sur le PC du joueur. Blips dessinés en petit (12 px) pour ne pas cacher la carte
 - **Style des blips** : clic droit sur un blip de la carte plane pour régler sa taille et sa forme (carré, rond, losange, triangle, hexagone), pour ce blip seul ou tous ceux du même type. Bouton « Enregistrer », réglages gardés sur le PC du joueur et repris par la carte réaliste
-- **Métiers ouverts** : les blips de qs-jobs-creator (table `qs_jobs_data`) ont un anneau vert pulsant quand au moins un employé est en service, sur la carte plane et la réaliste, pour tous les joueurs. État relu à chaque ouverture de la carte (10 s de cache). Réglages dans `Config.Map.ActiveJobs`
+- **Métiers ouverts** : les blips de qs-jobs-creator (table `qs_jobs_data`) ont un anneau vert pulsant quand au moins un employé est en service, sur la carte plane et la réaliste, pour tous les joueurs. État relu à chaque ouverture de la carte (10 s de cache). Police et secours ne sont jamais signalés (liste `Ignore` et types QBCore `leo` / `ems`). Réglages dans `Config.Map.ActiveJobs`
 - **Légende « Lieux »** : un œil par catégorie et par type de lieu (ex. « Supérette ») pour masquer des blips, bouton « Tout masquer / Tout afficher », clic sur un type = aller au plus proche. Le choix est mémorisé sur le PC du joueur et vaut aussi pour la carte réaliste
 - **Carte réaliste** (bouton « Réaliste ») : la caméra du jeu monte au-dessus de la vraie ville ; glisser = déplacer, clic droit glissé = tourner / incliner, molette = zoom, clic = point GPS là où on vise (bâtiment compris), ÉCHAP = retour à la carte plane. Blips, point GPS et itinéraire GPS dessinés sur les bâtiments. Pendant la vue, jg-hud est masqué (remasqué toutes les 500 ms s'il se réaffiche) et les nuages sont rendus transparents (`HideClouds = false` pour les garder). Réglages dans `Config.Map.Realistic` (`Enabled = false` pour retirer le bouton)
 - **Itinéraire GPS** tracé sur la carte plane comme sur la réaliste, ainsi que la route posée par un script sur un blip (`SetBlipRoute` : taxi, jobs, missions), dans la couleur du blip
@@ -24,7 +24,7 @@ Remplace le menu pause GTA (ÉCHAP, et P en option) par un menu au thème ASH.
 - **Signaler / Report** : ouvre le report de Luxu Admin (commande configurable)
 - **Récompense VIP** (ash_vipdaily) : carte dans l'Aperçu (disponible, temps avant la prochaine, série, réservé aux VIP) ; un clic place le point GPS sur le PNJ des récompenses (ash_vipdaily v1.4.1 ou plus ; résumé léger lu depuis la v2.0.1) ; masquée si la ressource n'est pas démarrée
 - Liens **Discord** et **Boutique VIP**
-- **Quitter la session** : confirmation par maintien, refusée si menotté / à terre / mort, anti-spam
+- **Quitter la session** : confirmation par maintien, refusée si menotté / à terre / mort ou dans les 60 s après un échange de tirs avec un joueur (`Config.BlockQuitInCombat`), anti-spam
 
 ## Dépendances
 `qb-core`, `ox_lib`, `oxmysql` — optionnel : `ash_notify` (notifications, secours ox_lib), `ash_vipdaily`
@@ -41,7 +41,8 @@ Remplace le menu pause GTA (ÉCHAP, et P en option) par un menu au thème ASH.
 
 ## Sécurité
 - Les callbacks NUI qui agissent (GPS, commandes, report, déconnexion) ne répondent que menu ouvert.
-- Déconnexion validée côté serveur : joueur chargé, anti-spam 1 s, refus si menotté / à terre / mort.
+- Déconnexion validée côté serveur : joueur chargé, anti-spam 1 s, refus si menotté / à terre / mort ou en combat. Le combat est détecté par le serveur (`weaponDamageEvent`, OneSync) : un menu de triche ne peut pas l'effacer. Chaque refus est écrit dans la console serveur.
+- Menu fermé et caches vidés quand le personnage est déchargé (retour à la sélection) : pas de focus bloqué, pas d'infos du personnage précédent.
 - Leaflet chargé avec empreintes SRI : un fichier modifié sur le CDN est refusé.
 - Tout texte affiché dans le NUI (noms, règlement, blips) est échappé.
 

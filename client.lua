@@ -828,6 +828,16 @@ if cayoCfg.Enabled then
     end)
 end
 
+-- Personnage déchargé (retour à la sélection, /logout) : menu fermé, sinon le focus NUI restait bloqué
+-- pendant que la boucle principale dort. Caches vidés : le perso suivant ne voit pas l'état VIP
+-- ni les blips du précédent.
+RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
+    closeMenu(true)
+    vipCache, vipCacheAt = nil, -1e9
+    blipCache, blipCacheAt = nil, -1e9
+    jobsCache, jobsCacheAt = nil, -1e9
+end)
+
 AddEventHandler('onResourceStop', function(res)
     if res ~= GetCurrentResourceName() then return end
     if cayoEdgeBlip and DoesBlipExist(cayoEdgeBlip) then RemoveBlip(cayoEdgeBlip) end

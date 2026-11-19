@@ -28,6 +28,10 @@ Config.Notifications = {
 -- menotté, à terre ou mort. (Ça n'empêche pas ALT+F4 / F8 quit, c'est un garde-fou RP.)
 Config.BlockQuitWhenRestrained = true
 
+-- Refuse aussi de quitter via le menu pendant N secondes après avoir tiré sur un joueur ou été touché
+-- par un joueur (détecté par le serveur, OneSync requis). 0 = désactivé.
+Config.BlockQuitInCombat = 60
+
 -- Message affiché au joueur à la déconnexion
 Config.QuitMessage = 'Tu as quitté ASH City. Ton personnage a été sauvegardé. À bientôt !'
 
@@ -193,6 +197,9 @@ Config.Map = {
     ActiveJobs = {
         Enabled = true,
         Refresh = 300,   -- secondes entre deux relectures des blips en base
+        -- Métiers jamais signalés (sinon la carte dit à tous si la police est en service).
+        -- Les métiers QBCore de type 'leo' ou 'ems' sont ignorés en plus de cette liste.
+        Ignore  = { 'police', 'sheriff', 'bcso', 'ambulance', 'ems' },
     },
 }
 
@@ -319,6 +326,7 @@ Config.Keys = {
 Config.Locale = {
     cuffed      = 'Tu ne peux pas quitter en étant menotté.',
     dead        = 'Tu ne peux pas quitter en étant à terre. Attends les secours.',
+    combat      = 'Tu ne peux pas quitter en plein combat. Réessaie dans %d s.',
     wait        = 'Patiente une seconde avant de réessayer.',
     streamerOn  = 'Mode streamer activé.',
     streamerOff = 'Mode streamer désactivé.',

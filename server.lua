@@ -19,6 +19,26 @@ end)
 
 local lastQuitTry = {}
 
+-- Anti déco en plein combat : dernier tir donné ou reçu par joueur (GetGameTimer), vu par le serveur.
+-- Même détection qu'ash_dclogs (weaponDamageEvent, OneSync) : le client ne peut pas l'effacer.
+local lastCombat = {}
+local combatDelai = (tonumber(Config.BlockQuitInCombat) or 60) * 1000   -- 0 = désactivé
+
+if combatDelai > 0 then
+    AddEventHandler('weaponDamageEvent', function(sender, data)
+        if type(data) ~= 'table' then return end
+        local netId = data.hitGlobalId or (data.hitGlobalIds and data.hitGlobalIds[1])
+        if not netId or netId == 0 then return end
+        local ent = NetworkGetEntityFromNetworkId(netId)
+        if ent == 0 or not IsPedAPlayer(ent) then return end
+        local victim = NetworkGetEntityOwner(ent)
+        sender = tonumber(sender)
+        if not victim or not sender or victim == sender then return end
+        local now = GetGameTimer()
+        lastCombat[sender], lastCombat[victim] = now, now
+    end)
+end
+
 -- Dimension (routing bucket) propre à chaque joueur qui quitte, et attente avant l'expulsion (ms)
 local ISOLEMENT_BUCKET = 900000
 local ISOLEMENT_DELAI  = 1500
@@ -50,6 +70,13 @@ lib.callback.register('ash_pausemenu:quit', function(src)
         end
     end
 
+    if combatDelai > 0 and lastCombat[src] and now - lastCombat[src] < combatDelai then
+        local reste = math.ceil((combatDelai - (now - lastCombat[src])) / 1000)
+        print(('[ash_pausemenu] %s (id %s) : départ refusé, combat il y a moins de %d s')
+            :format(GetPlayerName(src) or '?', src, combatDelai // 1000))
+        return false, (Config.Locale.combat or 'Tu ne peux pas quitter en plein combat. Réessaie dans %d s.'):format(reste)
+    end
+
     quitting[src] = true
     print(('[ash_pausemenu] %s (id %s) a quitté via le menu pause'):format(GetPlayerName(src) or '?', src))
 
@@ -64,7 +91,8 @@ lib.callback.register('ash_pausemenu:quit', function(src)
         -- des joueurs proches comme s'il s'éloignait, au lieu de disparaître d'un coup (crash possible chez eux).
         -- ash_dclogs : départ volontaire (et non "kick"), à signaler avant le changement de dimension
         if GetResourceState('ash_dclogs') == 'started' then
-            pcall(function() exports.ash_dclogs:SetDropReason(src, 'A quitté via le menu pause', 'quit') end)
+            local ok, err = pcall(function() exports.ash_dclogs:SetDropReason(src, 'A quitté via le menu pause', 'quit') end)
+            if not ok then print(('^3[ash_pausemenu] ash_dclogs:SetDropReason a échoué : %s^0'):format(tostring(err))) end
         end
         SetPlayerRoutingBucket(src, ISOLEMENT_BUCKET + src)
         SetTimeout(ISOLEMENT_DELAI, function()
@@ -81,6 +109,7 @@ end)
 AddEventHandler('playerDropped', function()
     quitting[source] = nil
     lastQuitTry[source] = nil
+    lastCombat[source] = nil
 end)
 
 -- Métiers ouverts (carte) : blips de qs-jobs-creator dont le métier a au moins un employé en service.
@@ -98,9 +127,25 @@ local function parseCoords(raw)
     return n[1], n[2], n[3]
 end
 
+-- Métiers jamais signalés : police et secours (type QBCore 'leo' / 'ems') et la liste Ignore de la config.
+-- Sinon la carte dirait à tout le monde si la police est en service.
+local ignoreJobs = {}
+for _, nom in ipairs(jobCfg.Ignore or { 'police', 'sheriff', 'bcso', 'ambulance', 'ems' }) do ignoreJobs[nom] = true end
+local IGNORE_TYPES = { leo = true, ems = true }
+
+local sqlErreur = false   -- l'erreur SQL n'est écrite qu'une fois
+
 local function loadJobBlips()
     local ok, rows = pcall(MySQL.query.await, 'SELECT job_name, coords FROM qs_jobs_data WHERE blip_id IS NOT NULL AND blip_id > 0')
-    if not ok then return end   -- table absente : qs-jobs-creator non installé
+    if not ok then
+        -- table absente (qs-jobs-creator non installé) ou base indisponible : anneaux désactivés, signalé une fois
+        if not sqlErreur then
+            sqlErreur = true
+            print(('^3[ash_pausemenu] lecture de qs_jobs_data impossible, métiers ouverts non affichés : %s^0'):format(tostring(rows)))
+        end
+        return
+    end
+    sqlErreur = false
     local list = {}
     for _, r in ipairs(rows or {}) do
         local x, y, z = parseCoords(r.coords)
@@ -129,7 +174,9 @@ lib.callback.register('ash_pausemenu:activeJobs', function(src)
         local onDuty, list = {}, {}
         for _, p in pairs(QBCore.Functions.GetQBPlayers()) do
             local job = p.PlayerData.job
-            if job and job.onduty then onDuty[job.name] = true end
+            if job and job.onduty and not ignoreJobs[job.name] and not IGNORE_TYPES[job.type] then
+                onDuty[job.name] = true
+            end
         end
         for _, b in ipairs(jobBlips) do
             if onDuty[b.job] then list[#list + 1] = { x = b.x, y = b.y, z = b.z } end
